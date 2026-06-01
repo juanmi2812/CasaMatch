@@ -1,0 +1,136 @@
+# CasaMatch — Prompts útiles
+
+## Prompt para crear demo HTML
+
+Actúa como diseñador UX/UI senior y frontend developer experto.
+
+Crea una demo visual navegable en un solo archivo HTML para CasaMatch, una app inmobiliaria moderna inspirada en Airbnb, Tinder y TikTok.
+
+CasaMatch permite descubrir casas, departamentos, terrenos e inversiones inmobiliarias compatibles con el estilo de vida, presupuesto y preferencias del usuario.
+
+Requisitos:
+- Todo en un solo archivo HTML.
+- CSS dentro de `<style>`.
+- JavaScript dentro de `<script>`.
+- Sin backend real.
+- Datos simulados.
+- Diseño mobile-first.
+- Estilo premium, moderno, limpio y amigable.
+- Inspiración visual: Airbnb, Tinder, TikTok, Apple y apps fintech.
+- Cards grandes, bordes redondeados, sombras suaves y animaciones.
+- Paleta: blanco, arena, gris claro, negro suave, coral/terracota o verde oliva.
+- Tipografía moderna tipo Inter o similar.
+- Debe verse como producto real, no como wireframe.
+
+Incluir pantallas:
+1. Landing de presentación.
+2. Onboarding de preferencias.
+3. Feed tipo swipe.
+4. Detalle de propiedad.
+5. Reels inmobiliarios.
+6. Panel para asesores/inmobiliarias.
+7. Simulador hipotecario.
+8. Captura de interesados.
+
+Funciones:
+- Navegación simulada.
+- Cards dinámicas.
+- Like/dislike/guardar.
+- Mensajes visuales.
+- Simulador hipotecario funcional.
+- Generador IA simulado para descripciones.
+- Formulario de contacto con mensaje de éxito.
+
+Propiedades ficticias:
+- Casa moderna en Querétaro.
+- Departamento en CDMX.
+- Casa familiar en Celaya.
+- Terreno de inversión en León.
+- Departamento pet friendly en Guadalajara.
+
+Entrega únicamente el código completo listo para copiar como index.html.
+
+## Prompt para mejorar demo
+
+Mejora esta demo para que se vea más premium, más moderna y más parecida a una app real.
+
+Quiero:
+- Mejor jerarquía visual.
+- Mejor navegación inferior tipo app móvil.
+- Animaciones más suaves.
+- Cards más atractivas.
+- Mejores textos comerciales.
+- Mejor sección para inversionistas.
+- Mejor panel para asesores.
+- Más sensación de producto real.
+- Diseño más aspiracional.
+
+No rompas la funcionalidad existente.
+Devuélveme el archivo HTML completo actualizado.
+
+## Prompt para landing page
+
+Crea una landing page moderna para presentar CasaMatch.
+
+Objetivo:
+Convencer a usuarios, asesores inmobiliarios, inmobiliarias, desarrolladoras e inversionistas de que CasaMatch es una nueva forma de descubrir propiedades compatibles con el estilo de vida de cada persona.
+
+Debe incluir:
+- Hero principal.
+- Propuesta de valor.
+- Problema.
+- Solución.
+- Cómo funciona.
+- Beneficios para usuarios.
+- Beneficios para asesores.
+- Beneficios para inmobiliarias.
+- Modelo de negocio.
+- Captura de interesados.
+- Preguntas frecuentes.
+- CTA final.
+
+Estilo:
+Premium, moderno, emocional, visual, limpio y confiable.
+
+Entrega en un solo archivo HTML con CSS y JS incluidos.
+
+## Prompt para pitch
+
+Crea una presentación tipo pitch para CasaMatch.
+
+La presentación debe explicar:
+- Problema.
+- Solución.
+- Producto.
+- Diferenciador.
+- Mercado.
+- Público objetivo.
+- Modelo de negocio.
+- MVP.
+- Go-to-market.
+- Competencia.
+- Ventaja competitiva.
+- Roadmap.
+- Qué buscamos.
+
+Tono:
+Claro, estratégico, profesional, convincente y visual.
+
+Debe estar pensada para presentar a posibles socios, inversionistas, inmobiliarias o desarrolladoras.
+
+## Prompt para revisar estrategia
+
+Analiza CasaMatch como si fueras un product manager senior, inversionista y experto en marketplaces inmobiliarios.
+
+Dime:
+- Qué partes de la idea son fuertes.
+- Qué partes son riesgosas.
+- Qué debería validarse primero.
+- Qué funciones sobran para el MVP.
+- Qué funciones son indispensables.
+- Cómo conseguir inventario inicial.
+- Cómo conseguir usuarios.
+- Cómo monetizar sin frenar el crecimiento.
+- Qué harías en los primeros 90 días.
+
+Sé honesto, práctico y directo.

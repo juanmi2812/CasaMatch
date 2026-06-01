@@ -1,0 +1,600 @@
+# CasaMatch — Contexto del Proyecto
+
+## Nombre provisional
+
+CasaMatch
+
+## Slogan principal
+
+Tu próxima casa, en un swipe.
+
+## Frases de marca
+
+- Encuentra un lugar que vaya contigo.
+- Más que metros cuadrados: estilo de vida.
+- Propiedades inteligentes para decisiones emocionales y financieras.
+- La app que encuentra propiedades compatibles contigo.
+- Encuentra casas, departamentos e inversiones que conectan con tu forma de vivir.
+
+---
+
+# Visión
+
+CasaMatch busca convertirse en una app inmobiliaria moderna, amigable y emocional, tan simple y atractiva como Airbnb, Tinder o TikTok, pero enfocada en bienes raíces.
+
+La app no debe sentirse como un portal tradicional de anuncios. Debe sentirse como una experiencia visual, rápida, personalizada y aspiracional para descubrir propiedades.
+
+---
+
+# Problema
+
+Buscar propiedades actualmente suele ser una experiencia:
+
+- Lenta.
+- Fría.
+- Saturada.
+- Poco visual.
+- Con publicaciones repetidas o desactualizadas.
+- Con fotos de baja calidad.
+- Con demasiados filtros técnicos.
+- Sin conexión emocional con el usuario.
+- Sin verdadera personalización.
+- Sin claridad sobre cómo sería vivir en una zona.
+
+La mayoría de portales inmobiliarios muestran propiedades como listas de anuncios, pero no ayudan al usuario a descubrir qué propiedad realmente encaja con su estilo de vida.
+
+---
+
+# Solución
+
+CasaMatch propone una experiencia tipo app social/lifestyle donde el usuario descubre propiedades mediante:
+
+- Cards visuales.
+- Swipes.
+- Compatibilidad personalizada.
+- Videos cortos.
+- Recomendaciones inteligentes.
+- Filtros simples.
+- Información de estilo de vida.
+- Contacto rápido.
+- Agenda de visitas.
+- Simulación de crédito.
+- Favoritos.
+- Experiencia emocional.
+
+La app debe ayudar al usuario a responder:
+
+> ¿Esta propiedad va conmigo?
+
+No solo:
+
+> ¿Cuántos metros cuadrados tiene?
+
+---
+
+# Diferenciador principal
+
+CasaMatch no solo muestra propiedades.
+
+CasaMatch encuentra propiedades compatibles con la persona.
+
+La app combina datos racionales como precio, ubicación, recámaras y metros cuadrados con factores emocionales y de estilo de vida como tranquilidad, vida social, mascotas, home office, escuelas, cafés, seguridad, plusvalía y tipo de zona.
+
+---
+
+# Inspiración
+
+## Producto
+
+- Airbnb
+- Tinder
+- TikTok
+- Instagram Reels
+- Apple
+- Apps fintech modernas
+
+## Sensación deseada
+
+- Fácil.
+- Moderna.
+- Visual.
+- Premium.
+- Confiable.
+- Emocional.
+- Aspiracional.
+- Rápida.
+- Divertida.
+
+---
+
+# Público objetivo
+
+## Usuarios finales
+
+- Compradores primerizos.
+- Personas buscando rentar.
+- Parejas jóvenes.
+- Familias.
+- Profesionistas.
+- Personas que se mudan de ciudad.
+- Inversionistas inmobiliarios.
+
+## Clientes de pago potenciales
+
+- Asesores inmobiliarios.
+- Inmobiliarias.
+- Desarrolladoras.
+- Brokers hipotecarios.
+- Notarías.
+- Bancos.
+- Aseguradoras.
+
+---
+
+# Funciones principales para usuarios
+
+## 1. Onboarding inteligente
+
+El usuario responde preguntas simples:
+
+- ¿Quieres comprar, rentar o invertir?
+- ¿Cuál es tu presupuesto?
+- ¿En qué ciudad o zona buscas?
+- ¿Qué estilo de vida tienes?
+- ¿Tienes mascotas?
+- ¿Trabajas desde casa?
+- ¿Buscas zona tranquila o vida social?
+- ¿Necesitas escuelas cerca?
+- ¿Te interesa plusvalía?
+
+Con esto, CasaMatch personaliza el feed.
+
+---
+
+## 2. Feed tipo swipe
+
+El usuario ve una propiedad a la vez en una card grande.
+
+Acciones:
+
+- Me gusta.
+- No me gusta.
+- Guardar.
+- Agendar visita.
+- Ver detalle.
+
+Cada interacción ayuda a mejorar las recomendaciones.
+
+---
+
+## 3. Compatibilidad de propiedad
+
+Cada propiedad muestra un porcentaje de compatibilidad.
+
+Ejemplo:
+
+> 92% compatible contigo
+
+La compatibilidad puede considerar:
+
+- Presupuesto.
+- Ubicación.
+- Tipo de propiedad.
+- Estilo arquitectónico.
+- Tamaño.
+- Amenidades.
+- Mascotas.
+- Home office.
+- Escuelas.
+- Vida social.
+- Tranquilidad.
+- Plusvalía.
+- Tiempo de traslado.
+
+---
+
+## 4. Vista detalle de propiedad
+
+Debe incluir:
+
+- Galería de fotos.
+- Precio.
+- Ubicación.
+- Tipo de propiedad.
+- Recámaras.
+- Baños.
+- Estacionamientos.
+- Metros cuadrados.
+- Descripción emocional.
+- Características principales.
+- Mapa visual simulado.
+- Información del asesor.
+- Botones de contacto.
+- Botón para agendar visita.
+- Botón para simular crédito.
+
+---
+
+## 5. Cómo se siente vivir aquí
+
+Sección especial que muestra indicadores como:
+
+- Seguridad.
+- Tráfico.
+- Vida social.
+- Tranquilidad.
+- Plusvalía.
+- Servicios cercanos.
+- Pet friendly.
+- Familias.
+- Home office.
+
+Esta sección es clave porque diferencia a CasaMatch de portales tradicionales.
+
+---
+
+## 6. Videos/Reels inmobiliarios
+
+Una sección tipo TikTok/Reels para descubrir propiedades mediante videos verticales.
+
+Ejemplos:
+
+- Casas modernas en Querétaro.
+- Departamentos pet friendly.
+- Inversiones con alta plusvalía.
+- Casas familiares cerca de escuelas.
+- Terrenos para inversión.
+
+---
+
+## 7. Favoritos y matches
+
+El usuario puede guardar propiedades y ver sus mejores matches.
+
+Debe existir una experiencia emocional:
+
+- “Esta propiedad va contigo.”
+- “Tu top 5 de casas compatibles.”
+- “Propiedades que podrían encantarte.”
+- “Nuevos matches en tu zona.”
+
+---
+
+## 8. Agenda de visitas
+
+El usuario puede solicitar o agendar visitas.
+
+Debe ser simple:
+
+- Elegir día.
+- Elegir horario.
+- Confirmar datos.
+- Recibir recordatorio.
+
+---
+
+## 9. Simulador hipotecario
+
+Debe permitir calcular una mensualidad aproximada con:
+
+- Precio de propiedad.
+- Enganche.
+- Plazo.
+- Tasa anual.
+- Mensualidad estimada.
+
+No necesita precisión bancaria perfecta para la demo, pero debe ser visual y útil.
+
+---
+
+# Funciones para asesores e inmobiliarias
+
+## 1. Publicación fácil de propiedades
+
+Formulario simple:
+
+- Título.
+- Precio.
+- Ubicación.
+- Tipo de propiedad.
+- Recámaras.
+- Baños.
+- Estacionamientos.
+- Metros cuadrados.
+- Fotos.
+- Amenidades.
+- Descripción.
+
+---
+
+## 2. Generador de descripción con IA
+
+El asesor puede generar textos atractivos automáticamente.
+
+Ejemplo:
+
+“Casa moderna ubicada en una zona tranquila de Querétaro, ideal para familias que buscan comodidad, diseño y excelente conexión con servicios. Sus espacios luminosos, acabados contemporáneos y distribución funcional la convierten en una excelente opción para vivir o invertir.”
+
+---
+
+## 3. Leads calificados
+
+Los asesores reciben usuarios interesados con información útil:
+
+- Presupuesto.
+- Zona buscada.
+- Tipo de operación.
+- Nivel de interés.
+- Propiedades guardadas.
+- Preferencias principales.
+
+---
+
+## 4. Estadísticas
+
+El panel puede mostrar:
+
+- Vistas.
+- Likes.
+- Guardados.
+- Contactos.
+- Solicitudes de visita.
+- Rendimiento de publicación.
+- Propiedades más atractivas.
+
+---
+
+# Modelo de negocio
+
+CasaMatch debe ser gratis para usuarios finales.
+
+Las fuentes de ingreso potenciales son:
+
+## Membresías para asesores
+
+Planes mensuales para publicar propiedades y recibir leads.
+
+## Planes para inmobiliarias
+
+Múltiples usuarios, inventario compartido, estadísticas y marca.
+
+## Propiedades destacadas
+
+Cobro por mejorar visibilidad.
+
+## Leads calificados
+
+Cobro por contacto de alta intención.
+
+## Herramientas premium de IA
+
+Descripciones, anuncios, reels, publicaciones para redes y análisis.
+
+## Desarrolladoras
+
+Espacios destacados para preventas y desarrollos.
+
+## Alianzas
+
+Brokers hipotecarios, bancos, notarías, aseguradoras y servicios de mudanza.
+
+---
+
+# MVP recomendado
+
+La primera versión debe enfocarse en demostrar el valor central:
+
+## Para usuarios
+
+- Onboarding básico.
+- Feed tipo swipe.
+- Propiedades simuladas o reales iniciales.
+- Vista detalle.
+- Favoritos.
+- Contacto/agendar visita.
+- Simulador hipotecario simple.
+
+## Para asesores
+
+- Formulario de publicación.
+- Panel básico.
+- Leads simulados.
+- Generador IA simulado.
+
+---
+
+# Ciudades sugeridas para validar
+
+No iniciar en todo México.
+
+Empezar con ciudades específicas:
+
+- Querétaro.
+- Celaya.
+- León.
+- Guadalajara.
+- CDMX.
+
+Una ciudad inicial puede ser suficiente para validar.
+
+---
+
+# Estilo visual
+
+## Paleta sugerida
+
+- Blanco.
+- Arena.
+- Gris claro.
+- Negro suave.
+- Coral.
+- Terracota.
+- Verde oliva.
+
+## UI
+
+- Mobile-first.
+- Cards grandes.
+- Bordes redondeados.
+- Sombras suaves.
+- Navegación inferior tipo app.
+- Botones claros.
+- Mucho espacio limpio.
+- Imágenes grandes.
+- Animaciones suaves.
+
+## Tipografía
+
+- Inter.
+- SF Pro.
+- Similar moderna sans-serif.
+
+---
+
+# Tono de comunicación
+
+CasaMatch debe hablar de manera:
+
+- Cercana.
+- Profesional.
+- Emocional.
+- Clara.
+- Confiable.
+- Moderna.
+
+Evitar lenguaje frío o excesivamente técnico.
+
+---
+
+# Ejemplos de microcopy
+
+## Home
+
+“Encuentra un lugar que vaya contigo.”
+
+## Compatibilidad
+
+“Esta casa coincide con tu estilo de vida.”
+
+## Favoritos
+
+“Guardamos esta propiedad para ti.”
+
+## Match
+
+“Nuevo match: una propiedad que podría encantarte.”
+
+## Asesor
+
+“Conecta con un asesor verificado.”
+
+## Simulador
+
+“Calcula una mensualidad aproximada y planea mejor tu compra.”
+
+---
+
+# Propiedades ficticias para demos
+
+## 1. Casa moderna en Querétaro
+
+- Precio: $3,250,000 MXN
+- Ubicación: Zibatá, Querétaro
+- Tipo: Casa
+- Recámaras: 3
+- Baños: 2.5
+- Estacionamientos: 2
+- M2: 180
+- Compatibilidad: 94%
+- Estilo ideal: Familias jóvenes, home office, zona tranquila.
+
+## 2. Departamento en CDMX
+
+- Precio: $4,800,000 MXN
+- Ubicación: Roma Norte, CDMX
+- Tipo: Departamento
+- Recámaras: 2
+- Baños: 2
+- Estacionamientos: 1
+- M2: 95
+- Compatibilidad: 89%
+- Estilo ideal: Profesionistas, vida social, cafés y restaurantes.
+
+## 3. Casa familiar en Celaya
+
+- Precio: $2,150,000 MXN
+- Ubicación: Zona Norte, Celaya
+- Tipo: Casa
+- Recámaras: 3
+- Baños: 2
+- Estacionamientos: 2
+- M2: 160
+- Compatibilidad: 91%
+- Estilo ideal: Familias, escuelas cercanas, tranquilidad.
+
+## 4. Terreno de inversión en León
+
+- Precio: $1,250,000 MXN
+- Ubicación: Zona Norte, León
+- Tipo: Terreno
+- M2: 300
+- Compatibilidad: 86%
+- Estilo ideal: Inversionistas, plusvalía, desarrollo futuro.
+
+## 5. Departamento pet friendly en Guadalajara
+
+- Precio: $3,100,000 MXN
+- Ubicación: Americana, Guadalajara
+- Tipo: Departamento
+- Recámaras: 2
+- Baños: 2
+- Estacionamientos: 1
+- M2: 88
+- Compatibilidad: 93%
+- Estilo ideal: Parejas jóvenes, mascotas, vida urbana.
+
+---
+
+# Reglas para demos HTML
+
+Cuando se solicite una demo HTML:
+
+- Crear un solo archivo HTML.
+- CSS dentro de `<style>`.
+- JavaScript dentro de `<script>`.
+- Sin backend real.
+- Datos simulados.
+- Debe abrir directo en navegador.
+- Debe sentirse como producto real.
+- Diseño mobile-first.
+- Incluir navegación simulada.
+- Incluir interacciones funcionales.
+- Incluir animaciones suaves.
+- Evitar diseño genérico.
+
+---
+
+# Pantallas mínimas de una demo
+
+1. Landing inicial.
+2. Onboarding.
+3. Feed tipo swipe.
+4. Detalle de propiedad.
+5. Reels inmobiliarios.
+6. Panel para asesores.
+7. Simulador hipotecario.
+8. Captura de interesados.
+
+---
+
+# Objetivo inmediato
+
+Crear una demo visual, navegable e impactante de CasaMatch para presentar la propuesta a posibles socios, inversionistas, asesores inmobiliarios, inmobiliarias y desarrolladoras.
+
+La demo debe hacer que la gente entienda rápidamente:
+
+- Qué es CasaMatch.
+- Por qué es diferente.
+- Cómo funciona.
+- Cómo se siente usarla.
+- Cómo podría generar negocio.

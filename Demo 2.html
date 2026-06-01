@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HomeMatch — Tu próxima casa, en un swipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --terra: #C2714F;
+    --terra-light: #E8A98A;
+    --terra-dark: #9E5A3A;
+    --olive: #6B7C5C;
+    --sand: #F5EFE6;
+    --sand-dark: #EDE4D7;
+    --black: #1A1A1A;
+    --gray: #6B6B6B;
+    --gray-light: #C8C8C8;
+    --white: #FFFFFF;
+    --radius: 20px;
+    --radius-sm: 12px;
+    --shadow: 0 8px 32px rgba(26,26,26,0.10);
+    --shadow-card: 0 16px 48px rgba(26,26,26,0.14);
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--font-body);
+    background: #F0EBE3;
+    color: var(--black);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  /* ─── PHONE SHELL ─── */
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    min-height: 100vh;
+    background: var(--sand);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 80px;
+    scrollbar-width: none;
+    animation: screenIn .35s cubic-bezier(.4,0,.2,1);
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { display: flex; }
+
+  @keyframes screenIn {
+    from { opacity:0; transform: translateY(16px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ─── STATUS BAR ─── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: inherit;
+  }
+
+  /* ─── BOTTOM NAV ─── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0,0,0,.07);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0 20px;
+    z-index: 100;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 12px;
+    transition: all .2s;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+  }
+  .nav-item .nav-icon { font-size: 22px; transition: transform .2s; }
+  .nav-item .nav-label { font-size: 10px; font-weight: 500; color: var(--gray); transition: color .2s; }
+  .nav-item.active .nav-label { color: var(--terra); }
+  .nav-item.active .nav-icon { transform: scale(1.1); }
+  .nav-item:active { background: var(--sand-dark); }
+
+  /* ─── BUTTONS ─── */
+  .btn-primary {
+    background: var(--terra);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 15px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    width: 100%;
+    transition: all .2s;
+    letter-spacing: .2px;
+  }
+  .btn-primary:active { transform: scale(.97); background: var(--terra-dark); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--gray);
+    border: 1.5px solid var(--gray-light);
+    border-radius: 50px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    cursor: pointer;
+    width: 100%;
+    transition: all .2s;
+  }
+  .btn-secondary:active { background: var(--sand-dark); }
+
+  .btn-outline-terra {
+    background: transparent;
+    color: var(--terra);
+    border: 1.5px solid var(--terra);
+    border-radius: 50px;
+    padding: 13px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-outline-terra:active { background: var(--terra); color: #fff; }
+
+  /* ─── BADGE ─── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--sand-dark);
+    border-radius: 50px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray);
+  }
+  .badge-terra { background: rgba(194,113,79,.12); color: var(--terra); }
+  .badge-olive { background: rgba(107,124,92,.12); color: var(--olive); }
+
+  /* ══════════════════════════════════════
+     SCREEN 1 — LANDING
+  ══════════════════════════════════════ */
+  #screen-landing {
+    background: var(--black);
+    color: white;
+    padding-bottom: 0;
+  }
+  .landing-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 80% 20%, rgba(194,113,79,.45) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 10% 80%, rgba(107,124,92,.30) 0%, transparent 70%),
+      #1A1A1A;
+    z-index: 0;
+  }
+  .landing-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 60px 28px 48px;
+    justify-content: space-between;
+  }
+  .landing-logo {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -.5px;
+  }
+  .landing-logo span { color: var(--terra-light); }
+  .landing-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+  .landing-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--terra-light);
+    width: fit-content;
+    backdrop-filter: blur(8px);
+  }
+  .landing-title {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1.1;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -1px;
+  }
+  .landing-title em { color: var(--terra-light); font-style: italic; }
+  .landing-subtitle {
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(255,255,255,.65);
+    font-weight: 300;
+  }
+  .landing-stats {
+    display: flex;
+    gap: 0;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 18px;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+  }
+  .stat-item { flex: 1; text-align: center; }
+  .stat-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,.12); }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    display: block;
+  }
+  .stat-label { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; display: block; }
+  .landing-actions { display: flex; flex-direction: column; gap: 12px; }
+  .landing-actions .btn-primary { background: var(--terra); }
+  .landing-actions .btn-secondary { border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
+  .landing-actions .btn-secondary:hover { border-color: rgba(255,255,255,.4); }
+
+  /* ══════════════════════════════════════
+     SCREEN 2 — ONBOARDING
+  ══════════════════════════════════════ */
+  #screen-onboarding { background: var(--white); }
+  .onboarding-header {
+    padding: 20px 24px 0;
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    z-index: 10;
+  }
+  .progress-bar {
+    height: 3px;
+    background: var(--sand-dark);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--terra);
+    border-radius: 2px;
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+  .step-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 8px; }
+  .step-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--black);
+    margin-bottom: 6px;
+  }
+  .step-subtitle { font-size: 14px; color: var(--gray); line-height: 1.5; }
+  .ob-step { display: none; flex-direction: column; flex: 1; }
+  .ob-step.active { display: flex; animation: screenIn .3s ease; }
+  .ob-options { display: flex; flex-direction: column; gap: 12px; padding: 24px; }
+  .ob-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border: 2px solid var(--sand-dark);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--white);
+  }
+  .ob-option.selected { border-color: var(--terra); background: rgba(194,113,79,.05); }
+  .ob-option:active { transform: scale(.98); }
+  .ob-icon { font-size: 28px; flex-shrink: 0; }
+  .ob-text .ob-opt-title { font-size: 15px; font-weight: 600; color: var(--black); }
+  .ob-text .ob-opt-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .ob-check {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--gray-light);
+    flex-shrink: 0;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ob-option.selected .ob-check {
+    background: var(--terra);
+    border-color: var(--terra);
+    color: white;
+    font-size: 12px;
+  }
+  .ob-option.selected .ob-check::after { content: '✓'; }
+
+  /* Budget slider */
+  .budget-slider-wrap { padding: 24px; }
+  .budget-display {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 6px;
+  }
+  .budget-sub { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+  input[type=range] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    background: linear-gradient(to right, var(--terra) 0%, var(--terra) 50%, var(--sand-dark) 50%);
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 20px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--terra);
+    box-shadow: 0 2px 8px rgba(194,113,79,.4);
+    cursor: pointer;
+  }
+  .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-top: -12px; }
+
+  /* lifestyle pills */
+  .ob-pills { display: flex; flex-wrap: wrap; gap: 10px; padding: 24px; }
+  .ob-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border: 2px solid var(--sand-dark);
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    background: white;
+    color: var(--gray);
+  }
+  .ob-pill.selected { border-color: var(--terra); background: rgba(194,113,79,.08); color: var(--terra); }
+  .ob-pill:active { transform: scale(.96); }
+
+  .ob-footer { padding: 16px 24px 32px; margin-top: auto; }
+
+  /* ══════════════════════════════════════
+     SCREEN 3 — FEED / SWIPE
+  ══════════════════════════════════════ */
+  #screen-feed { background: var(--sand); }
+  .feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    background: var(--sand);
+    z-index: 20;
+  }
+  .feed-logo { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--black); }
+  .feed-logo span { color: var(--terra); }
+  .feed-actions { display: flex; gap: 10px; }
+  .icon-btn {
+    width: 40px; height: 40px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    transition: transform .15s;
+  }
+  .icon-btn:active { transform: scale(.92); }
+
+  .feed-zone {
+    position: relative;
+    padding: 0 16px;
+    height: 520px;
+    flex-shrink: 0;
+  }
+
+  /* PROPERTY CARD */
+  .prop-card {
+    position: absolute;
+    inset: 0;
+    margin: 0 16px;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    cursor: grab;
+    transition: transform .15s ease;
+    user-select: none;
+  }
+  .prop-card.back { transform: scale(.96) translateY(12px); z-index: 1; }
+  .prop-card.front { z-index: 2; }
+  .prop-card.back2 { transform: scale(.92) translateY(24px); z-index: 0; }
+
+  .prop-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: var(--sand-dark);
+    position: relative;
+  }
+
+  /* card gradient overlay */
+  .prop-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 30%,
+      rgba(0,0,0,.15) 55%,
+      rgba(0,0,0,.75) 100%
+    );
+    pointer-events: none;
+  }
+
+  .prop-card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 22px 22px;
+    color: white;
+    pointer-events: none;
+  }
+  .prop-compat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 50px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 10px;
+  }
+  .prop-compat .compat-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ADE80; }
+  .prop-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 4px; }
+  .prop-location { font-size: 13px; opacity: .8; margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
+  .prop-price { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .prop-tags { display: flex; gap: 6px; flex-wrap: wrap; pointer-events: auto; }
+  .prop-tag {
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 50px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: white;
+  }
+
+  /* Swipe indicator */
+  .swipe-like, .swipe-nope {
+    position: absolute;
+    top: 28px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 10;
+    pointer-events: none;
+    border: 3px solid;
+  }
+  .swipe-like { left: 20px; color: #22c55e; border-color: #22c55e; transform: rotate(-15deg); }
+  .swipe-nope { right: 20px; color: #ef4444; border-color: #ef4444; transform: rotate(15deg); }
+
+  /* Card image mock */
+  .card-img-mock {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Swipe action bar */
+  .swipe-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 20px 0;
+    flex-shrink: 0;
+  }
+  .action-btn {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    transition: transform .15s;
+    background: white;
+  }
+  .action-btn.main { width: 64px; height: 64px; font-size: 26px; background: var(--terra); color: white; box-shadow: 0 8px 24px rgba(194,113,79,.35); }
+  .action-btn:active { transform: scale(.9); }
+
+  /* filter tabs */
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .ftab {
+    flex-shrink: 0;
+    padding: 7px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    border: 1.5px solid var(--sand-dark);
+    color: var(--gray);
+    transition: all .2s;
+  }
+  .ftab.active { background: var(--terra); border-color: var(--terra); color: white; }
+
+  /* ══════════════════════════════════════
+     SCREEN 4 — PROPERTY DETAIL
+  ══════════════════════════════════════ */
+  #screen-detail { background: var(--white); padding-bottom: 100px; }
+
+  .detail-hero {
+    position: relative;
+    height: 320px;
+    flex-shrink: 0;
+    background: var(--sand-dark);
+    overflow: hidden;
+  }
+  .detail-img-mock {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 90px;
+    background: linear-gradient(135deg, #EDE4D7 0%, #D4C5B0 100%);
+  }
+  .detail-back-btn {
+    position: absolute;
+    top: 20px;
+    left: 16px;
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,.95);
+    border-radius: 50%;
+    border: none;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    z-index: 5;
+  }
+  .detail-share-btn {
+    position: absolute;
+    top: 20px;
+    right: 16px;
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,.95);
+    border-radius: 50%;
+    border: none;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    z-index: 5;
+  }
+  .gallery-dots { display: flex; gap: 5px; position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); }
+  .gdot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: .2s; }
+  .gdot.active { width: 18px; border-radius: 3px; background: white; }
+
+  .detail-body { padding: 22px 20px 0; }
+  .detail-compat-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .detail-compat-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(74,222,128,.12);
+    border: 1px solid rgba(74,222,128,.3);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #16a34a;
+  }
+  .detail-price {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 4px;
+  }
+  .detail-name { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--black); margin-bottom: 4px; }
+  .detail-location { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 4px; margin-bottom: 18px; }
+
+  .detail-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 22px;
+    background: var(--sand);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .spec-item { text-align: center; }
+  .spec-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+  .spec-val { font-size: 14px; font-weight: 700; color: var(--black); display: block; }
+  .spec-label { font-size: 10px; color: var(--gray); }
+
+  .section-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--black); }
+
+  .detail-desc { font-size: 14px; line-height: 1.7; color: var(--gray); margin-bottom: 22px; }
+
+  /* Lifestyle indicators */
+  .lifestyle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .lifestyle-item {
+    background: var(--sand);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .li-icon { font-size: 22px; flex-shrink: 0; }
+  .li-label { font-size: 12px; font-weight: 500; color: var(--gray); margin-bottom: 4px; }
+  .li-bar {
+    height: 5px;
+    background: var(--sand-dark);
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+  }
+  .li-fill { height: 100%; background: var(--terra); border-radius: 3px; }
+  .li-fill.high { background: #22c55e; }
+  .li-fill.mid { background: #f59e0b; }
+
+  /* Asesor card */
+  .asesor-card {
+    background: var(--sand);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .asesor-avatar {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--terra), var(--terra-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .asesor-name { font-size: 14px; font-weight: 700; color: var(--black); }
+  .asesor-role { font-size: 12px; color: var(--gray); }
+  .asesor-verified { font-size: 11px; color: var(--olive); font-weight: 600; margin-top: 2px; }
+  .asesor-contact { margin-left: auto; display: flex; gap: 8px; }
+  .contact-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--sand-dark);
+    background: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .detail-cta { display: flex; gap: 12px; padding: 0 0 20px; }
+  .detail-cta .btn-primary { flex: 1; }
+  .detail-cta .btn-outline-terra { flex: 1; }
+
+  /* Mapa mock */
+  .map-mock {
+    height: 140px;
+    background: #E8EBE4;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .map-pin { font-size: 32px; }
+  .map-label {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 50px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    white-space: nowrap;
+  }
+
+  /* ══════════════════════════════════════
+     SCREEN 5 — REELS
+  ══════════════════════════════════════ */
+  #screen-reels {
+    background: var(--black);
+    padding-bottom: 80px;
+  }
+  .reels-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .reel-item {
+    display: none;
+    width: 100%;
+    height: calc(100vh - 160px);
+    min-height: 500px;
+    position: relative;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .reel-item.active { display: flex; animation: screenIn .3s ease; }
+  .reel-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 120px;
+  }
+  .reel-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,.2) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,.7) 80%, rgba(0,0,0,.9) 100%);
+  }
+  .reel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; color: white; }
+  .reel-compat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(74,222,128,.2);
+    border: 1px solid rgba(74,222,128,.4);
+    border-radius: 50px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4ade80;
+    margin-bottom: 8px;
+  }
+  .reel-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .reel-location { font-size: 13px; opacity: .7; margin-bottom: 12px; }
+  .reel-price { font-size: 18px; font-weight: 700; color: var(--terra-light); margin-bottom: 16px; }
+  .reel-actions-right {
+    position: absolute;
+    right: 16px;
+    bottom: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+  .reel-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: white;
+  }
+  .reel-action-icon {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(8px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: transform .2s;
+  }
+  .reel-action-btn:active .reel-action-icon { transform: scale(.88); }
+  .reel-action-label { font-size: 10px; font-weight: 600; }
+
+  .reels-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+  .rdot { width: 3px; height: 16px; border-radius: 2px; background: rgba(255,255,255,.3); cursor: pointer; transition: .2s; }
+  .rdot.active { height: 28px; background: white; }
+
+  .reels-header { padding: 20px 20px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .reels-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: white; }
+  .reels-cats { display: flex; gap: 8px; padding: 0 20px 10px; overflow-x: auto; scrollbar-width: none; }
+  .reels-cats::-webkit-scrollbar { display: none; }
+  .rcat { flex-shrink: 0; padding: 6px 14px; border-radius: 50px; font-size: 12px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.15); transition: all .2s; }
+  .rcat.active { background: var(--terra); border-color: var(--terra); color: white; }
+
+  .reel-tap-area {
+    position: absolute;
+    inset: 0;
+    display: flex;
+  }
+  .reel-tap-prev { flex: 1; cursor: pointer; }
+  .reel-tap-next { flex: 2; cursor: pointer; }
+
+  /* ══════════════════════════════════════
+     SCREEN 6 — PANEL ASESOR
+  ══════════════════════════════════════ */
+  #screen-asesor { background: var(--white); }
+
+  .asesor-header {
+    background: linear-gradient(135deg, var(--black) 0%, #2D2D2D 100%);
+    padding: 60px 24px 32px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .asesor-header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: rgba(194,113,79,.2);
+  }
+  .asesor-header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; left: -20px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(107,124,92,.15);
+  }
+  .asesor-header-inner { position: relative; z-index: 1; }
+  .asesor-greeting { font-size: 13px; opacity: .6; margin-bottom: 4px; }
+  .asesor-panel-name { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .asesor-plan { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 50px; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--terra-light); margin-bottom: 20px; }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--sand);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+  .stat-card-num {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--black);
+  }
+  .stat-card-label { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .stat-card-change { font-size: 11px; color: #22c55e; font-weight: 600; margin-top: 4px; }
+
+  .section-pad { padding: 0 20px; }
+
+  .prop-list-item {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--sand-dark);
+    cursor: pointer;
+  }
+  .prop-list-item:last-child { border-bottom: none; }
+  .prop-list-img {
+    width: 64px; height: 64px;
+    border-radius: var(--radius-sm);
+    background: var(--sand-dark);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .prop-list-name { font-size: 14px; font-weight: 600; color: var(--black); }
+  .prop-list-price { font-size: 13px; color: var(--terra); font-weight: 600; }
+  .prop-list-stats { font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .prop-list-arrow { margin-left: auto; color: var(--gray-light); font-size: 16px; }
+
+  .ai-gen-card {
+    background: linear-gradient(135deg, var(--black), #2D2D2D);
+    border-radius: var(--radius);
+    padding: 20px;
+    color: white;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-gen-card::before {
+    content: '✨';
+    position: absolute;
+    right: 20px;
+    top: 16px;
+    font-size: 24px;
+  }
+  .ai-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .ai-card-sub { font-size: 12px; opacity: .6; margin-bottom: 16px; }
+
+  .leads-section { margin-bottom: 20px; }
+  .lead-item {
+    background: var(--sand);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .lead-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--olive), #4A5E3C);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .lead-name { font-size: 13px; font-weight: 600; color: var(--black); }
+  .lead-info { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .lead-budget { font-size: 11px; color: var(--terra); font-weight: 600; margin-top: 2px; }
+  .lead-badge {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .lead-badge.hot { background: rgba(239,68,68,.1); color: #ef4444; }
+  .lead-badge.warm { background: rgba(245,158,11,.1); color: #f59e0b; }
+
+  /* ══════════════════════════════════════
+     SCREEN 7 — SIMULADOR
+  ══════════════════════════════════════ */
+  #screen-sim { background: var(--white); }
+  .sim-header {
+    background: linear-gradient(135deg, var(--terra), var(--terra-dark));
+    padding: 60px 24px 32px;
+    color: white;
+  }
+  .sim-title { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .sim-sub { font-size: 14px; opacity: .75; }
+  .sim-body { padding: 24px 20px; }
+  .sim-result {
+    background: var(--sand);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .sim-label { font-size: 13px; color: var(--gray); margin-bottom: 8px; }
+  .sim-amount {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--terra);
+    margin-bottom: 4px;
+  }
+  .sim-period { font-size: 13px; color: var(--gray); margin-bottom: 16px; }
+  .sim-breakdown { display: flex; justify-content: space-around; border-top: 1px solid var(--sand-dark); padding-top: 16px; }
+  .sim-bd-item { text-align: center; }
+  .sim-bd-val { font-size: 14px; font-weight: 700; color: var(--black); }
+  .sim-bd-label { font-size: 10px; color: var(--gray); }
+
+  .sim-field { margin-bottom: 20px; }
+  .sim-field-label { font-size: 13px; font-weight: 600; color: var(--black); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .sim-field-val { color: var(--terra); }
+  input[type=range].sim-range {
+    background: linear-gradient(to right, var(--terra) 0%, var(--terra) var(--pct, 50%), var(--sand-dark) var(--pct, 50%));
+  }
+
+  /* ══════════════════════════════════════
+     SCREEN 8 — CAPTURA LEADS
+  ══════════════════════════════════════ */
+  #screen-leads { background: var(--white); }
+  .leads-hero {
+    background: linear-gradient(135deg, var(--olive) 0%, #4A5E3C 100%);
+    padding: 60px 24px 32px;
+    color: white;
+  }
+  .leads-hero-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
+  .leads-hero-sub { font-size: 14px; opacity: .75; }
+
+  .form-body { padding: 24px 20px; }
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-size: 13px; font-weight: 600; color: var(--black); margin-bottom: 7px; display: block; }
+  .form-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--sand-dark);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: var(--font-body);
+    color: var(--black);
+    background: white;
+    outline: none;
+    transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus { border-color: var(--terra); }
+  .form-select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--sand-dark);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: var(--font-body);
+    color: var(--black);
+    background: white;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .form-select:focus { border-color: var(--terra); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Success toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1A1A1A;
+    color: white;
+    padding: 14px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all .35s cubic-bezier(.4,0,.2,1);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    max-width: 380px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Favorites badge */
+  .fav-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    background: var(--terra);
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+  }
+
+  .nav-icon-wrap { position: relative; display: inline-block; }
+
+  /* AI modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    transform: translateY(100%);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 40px; height: 4px; background: var(--sand-dark); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .modal-sub { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+  .ai-output {
+    background: var(--sand);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--black);
+    margin-bottom: 16px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ai-typing { display: none; }
+  .ai-typing span {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--terra);
+    border-radius: 50%;
+    animation: bounce .8s infinite;
+    margin: 0 2px;
+  }
+  .ai-typing span:nth-child(2) { animation-delay: .15s; }
+  .ai-typing span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* Visit modal */
+  .visit-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .visit-time {
+    padding: 12px;
+    border: 2px solid var(--sand-dark);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--gray);
+  }
+  .visit-time.selected { border-color: var(--terra); background: rgba(194,113,79,.08); color: var(--terra); }
+  .date-row { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; scrollbar-width: none; }
+  .date-row::-webkit-scrollbar { display: none; }
+  .date-chip {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 50px;
+    border: 2px solid var(--sand-dark);
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .date-chip.selected { border-color: var(--terra); background: rgba(194,113,79,.08); }
+  .date-day { font-size: 10px; color: var(--gray); font-weight: 500; }
+  .date-num { font-size: 16px; font-weight: 700; color: var(--black); }
+  .date-chip.selected .date-day, .date-chip.selected .date-num { color: var(--terra); }
+
+  /* ─── Responsive ─── */
+  @media (min-width: 430px) {
+    .phone {
+      margin: 0 auto;
+      box-shadow: 0 0 80px rgba(0,0,0,.25);
+      border-radius: 44px;
+      min-height: 900px;
+      height: 900px;
+      overflow: hidden;
+    }
+    .screen { padding-bottom: 90px; }
+    .bottom-nav { border-radius: 0 0 44px 44px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- ══════════════ SCREEN 1: LANDING ══════════════ -->
+  <div class="screen active" id="screen-landing">
+    <div class="landing-bg"></div>
+    <div class="landing-content">
+      <div class="landing-logo">Home<span>Match</span></div>
+      <div class="landing-hero">
+        <div class="landing-tag">✦ Nueva forma de buscar casa</div>
+        <div class="landing-title">Tu próxima<br>casa, en un<br><em>swipe.</em></div>
+        <div class="landing-subtitle">Encuentra propiedades compatibles con tu estilo de vida, presupuesto y lo que realmente buscas.</div>
+        <div class="landing-stats">
+          <div class="stat-item">
+            <span class="stat-num">2.4k</span>
+            <span class="stat-label">Propiedades</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">94%</span>
+            <span class="stat-label">Satisfacción</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">320+</span>
+            <span class="stat-label">Asesores</span>
+          </div>
+        </div>
+      </div>
+      <div class="landing-actions">
+        <button class="btn-primary" onclick="goToOnboarding()">Encontrar mi casa ideal</button>
+        <button class="btn-secondary" onclick="goToFeed()">Solo explorar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 2: ONBOARDING ══════════════ -->
+  <div class="screen" id="screen-onboarding">
+    <div class="status-bar" style="background: white;">
+      <span>9:41</span>
+      <div style="display:flex;gap:4px;align-items:center;"><span>●●●</span><span>📶</span><span>🔋</span></div>
+    </div>
+    <div class="onboarding-header">
+      <div class="progress-bar">
+        <div class="progress-fill" id="ob-progress" style="width: 25%"></div>
+      </div>
+    </div>
+
+    <!-- Step 1: Tipo de operación -->
+    <div class="ob-step active" id="ob-step-1">
+      <div style="padding: 0 24px 16px;">
+        <div class="step-label">Paso 1 de 4</div>
+        <div class="step-title">¿Qué estás buscando?</div>
+        <div class="step-subtitle">Esto nos ayuda a personalizar tu experiencia.</div>
+      </div>
+      <div class="ob-options">
+        <div class="ob-option" onclick="selectOption(this, 'op-type')">
+          <div class="ob-icon">🏡</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Comprar una propiedad</div>
+            <div class="ob-opt-sub">Casa, departamento o terreno</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-option" onclick="selectOption(this, 'op-type')">
+          <div class="ob-icon">🔑</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Rentar una propiedad</div>
+            <div class="ob-opt-sub">Busco algo para los próximos meses</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-option" onclick="selectOption(this, 'op-type')">
+          <div class="ob-icon">📈</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Invertir en bienes raíces</div>
+            <div class="ob-opt-sub">Busco plusvalía o renta</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn-primary" onclick="nextStep(2)">Continuar</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Presupuesto -->
+    <div class="ob-step" id="ob-step-2">
+      <div style="padding: 0 24px 16px;">
+        <div class="step-label">Paso 2 de 4</div>
+        <div class="step-title">¿Cuál es tu presupuesto?</div>
+        <div class="step-subtitle">Solo una referencia. Puedes ajustarlo después.</div>
+      </div>
+      <div class="budget-slider-wrap">
+        <div class="budget-display" id="budget-display">$2,500,000 MXN</div>
+        <div class="budget-sub">Presupuesto máximo aproximado</div>
+        <input type="range" id="budget-slider" min="500" max="8000" value="2500" step="100"
+          oninput="updateBudget(this.value)">
+        <div class="range-labels">
+          <span>$500k</span>
+          <span>$4M</span>
+          <span>$8M+</span>
+        </div>
+        <div style="height:20px;"></div>
+        <div style="background:var(--sand);border-radius:var(--radius);padding:16px 18px;">
+          <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">Propiedades disponibles en este rango</div>
+          <div style="font-size:20px;font-weight:700;color:var(--terra);" id="prop-count">148 propiedades</div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn-primary" onclick="nextStep(3)">Continuar</button>
+        <div style="height:10px;"></div>
+        <button class="btn-secondary" onclick="nextStep(3)">Saltar este paso</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Ciudad -->
+    <div class="ob-step" id="ob-step-3">
+      <div style="padding: 0 24px 16px;">
+        <div class="step-label">Paso 3 de 4</div>
+        <div class="step-title">¿Dónde quieres vivir?</div>
+        <div class="step-subtitle">Elige una o varias ciudades.</div>
+      </div>
+      <div class="ob-options">
+        <div class="ob-option" onclick="selectOption(this, 'city')">
+          <div class="ob-icon">🏛️</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Querétaro</div>
+            <div class="ob-opt-sub">340+ propiedades disponibles</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-option" onclick="selectOption(this, 'city')">
+          <div class="ob-icon">🌆</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Ciudad de México</div>
+            <div class="ob-opt-sub">820+ propiedades disponibles</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-option" onclick="selectOption(this, 'city')">
+          <div class="ob-icon">🌵</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">Guadalajara</div>
+            <div class="ob-opt-sub">210+ propiedades disponibles</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+        <div class="ob-option" onclick="selectOption(this, 'city')">
+          <div class="ob-icon">🏭</div>
+          <div class="ob-text">
+            <div class="ob-opt-title">León / Celaya</div>
+            <div class="ob-opt-sub">190+ propiedades disponibles</div>
+          </div>
+          <div class="ob-check"></div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn-primary" onclick="nextStep(4)">Continuar</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Lifestyle -->
+    <div class="ob-step" id="ob-step-4">
+      <div style="padding: 0 24px 16px;">
+        <div class="step-label">Paso 4 de 4</div>
+        <div class="step-title">¿Cómo es tu estilo de vida?</div>
+        <div class="step-subtitle">Elige todo lo que te describe.</div>
+      </div>
+      <div class="ob-pills">
+        <div class="ob-pill" onclick="togglePill(this)">🐾 Tengo mascotas</div>
+        <div class="ob-pill" onclick="togglePill(this)">💻 Trabajo desde casa</div>
+        <div class="ob-pill" onclick="togglePill(this)">🏫 Escuelas cerca</div>
+        <div class="ob-pill" onclick="togglePill(this)">🤫 Zona tranquila</div>
+        <div class="ob-pill" onclick="togglePill(this)">🍕 Vida social</div>
+        <div class="ob-pill" onclick="togglePill(this)">📈 Plusvalía</div>
+        <div class="ob-pill" onclick="togglePill(this)">🚗 Estacionamiento</div>
+        <div class="ob-pill" onclick="togglePill(this)">🌳 Áreas verdes</div>
+        <div class="ob-pill" onclick="togglePill(this)">🏊 Amenidades</div>
+        <div class="ob-pill" onclick="togglePill(this)">🔐 Seguridad 24h</div>
+        <div class="ob-pill" onclick="togglePill(this)">👨‍👩‍👧 Zona familiar</div>
+        <div class="ob-pill" onclick="togglePill(this)">🌇 Vista urbana</div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn-primary" onclick="finishOnboarding()">Ver mis matches ✦</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 3: FEED SWIPE ══════════════ -->
+  <div class="screen" id="screen-feed">
+    <div class="feed-header">
+      <div class="feed-logo">Home<span>Match</span></div>
+      <div class="feed-actions">
+        <button class="icon-btn" onclick="showToast('🔔 Notificaciones activas')">🔔</button>
+        <button class="icon-btn" style="position:relative;" onclick="goToScreen('screen-leads')">
+          <div class="nav-icon-wrap">⚙️<span class="fav-badge" id="fav-badge-btn">3</span></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-tabs">
+      <div class="ftab active" onclick="setFilter(this, 'Todos')">✦ Para ti</div>
+      <div class="ftab" onclick="setFilter(this, 'Casas')">🏡 Casas</div>
+      <div class="ftab" onclick="setFilter(this, 'Deptos')">🏢 Deptos</div>
+      <div class="ftab" onclick="setFilter(this, 'Terrenos')">🌿 Terrenos</div>
+      <div class="ftab" onclick="setFilter(this, 'Inversión')">📈 Inversión</div>
+    </div>
+
+    <div class="feed-zone" id="feed-zone">
+      <!-- Cards injected by JS -->
+    </div>
+
+    <div class="swipe-actions">
+      <button class="action-btn" title="No me interesa" onclick="swipeCard('nope')">✕</button>
+      <button class="action-btn" title="Guardar" onclick="swipeCard('save')" style="background:white;border:2px solid var(--sand-dark);">🔖</button>
+      <button class="action-btn main" title="Me gusta" onclick="swipeCard('like')">♥</button>
+      <button class="action-btn" title="Ver detalles" onclick="goToDetail()">→</button>
+    </div>
+
+    <div style="padding: 12px 20px 0; flex-shrink:0;">
+      <div style="text-align:center;font-size:12px;color:var(--gray);">
+        Desliza ← para descartar &nbsp;·&nbsp; → para continuar
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 4: DETALLE ══════════════ -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-hero" id="detail-hero" style="overflow:hidden;position:relative;">
+      <!-- Populated dynamically by goToDetail() -->
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-compat-row">
+        <div class="detail-compat-badge">● <span id="detail-compat">94%</span> compatible contigo</div>
+        <button onclick="toggleFav()" id="fav-btn" style="background:none;border:none;font-size:24px;cursor:pointer;">🤍</button>
+      </div>
+      <div class="detail-price" id="detail-price">$3,250,000 MXN</div>
+      <div class="detail-name" id="detail-name">Casa moderna en Zibatá</div>
+      <div class="detail-location">📍 <span id="detail-loc">Zibatá, Querétaro</span></div>
+
+      <div class="detail-specs">
+        <div class="spec-item">
+          <span class="spec-icon">🛏️</span>
+          <span class="spec-val" id="d-rooms">3</span>
+          <span class="spec-label">Recámaras</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon">🚿</span>
+          <span class="spec-val" id="d-baths">2.5</span>
+          <span class="spec-label">Baños</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon">🚗</span>
+          <span class="spec-val" id="d-cars">2</span>
+          <span class="spec-label">Cajones</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon">📐</span>
+          <span class="spec-val" id="d-m2">180</span>
+          <span class="spec-label">M²</span>
+        </div>
+      </div>
+
+      <div class="section-title">Descripción</div>
+      <div class="detail-desc" id="detail-desc">
+        Casa moderna ubicada en una zona tranquila de Querétaro, ideal para familias que buscan comodidad, diseño y excelente conexión con servicios. Sus espacios luminosos, acabados contemporáneos y distribución funcional la convierten en una excelente opción para vivir o invertir.
+      </div>
+
+      <div class="section-title">¿Cómo se siente vivir aquí?</div>
+      <div class="lifestyle-grid" id="detail-lifestyle">
+        <div class="lifestyle-item">
+          <div class="li-icon">🔐</div>
+          <div style="flex:1;">
+            <div class="li-label">Seguridad</div>
+            <div class="li-bar"><div class="li-fill high" style="width:90%"></div></div>
+          </div>
+        </div>
+        <div class="lifestyle-item">
+          <div class="li-icon">🤫</div>
+          <div style="flex:1;">
+            <div class="li-label">Tranquilidad</div>
+            <div class="li-bar"><div class="li-fill high" style="width:88%"></div></div>
+          </div>
+        </div>
+        <div class="lifestyle-item">
+          <div class="li-icon">📈</div>
+          <div style="flex:1;">
+            <div class="li-label">Plusvalía</div>
+            <div class="li-bar"><div class="li-fill high" style="width:85%"></div></div>
+          </div>
+        </div>
+        <div class="lifestyle-item">
+          <div class="li-icon">🐾</div>
+          <div style="flex:1;">
+            <div class="li-label">Pet Friendly</div>
+            <div class="li-bar"><div class="li-fill mid" style="width:70%"></div></div>
+          </div>
+        </div>
+        <div class="lifestyle-item">
+          <div class="li-icon">🏫</div>
+          <div style="flex:1;">
+            <div class="li-label">Escuelas</div>
+            <div class="li-bar"><div class="li-fill high" style="width:95%"></div></div>
+          </div>
+        </div>
+        <div class="lifestyle-item">
+          <div class="li-icon">🍕</div>
+          <div style="flex:1;">
+            <div class="li-label">Vida social</div>
+            <div class="li-bar"><div class="li-fill mid" style="width:60%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Ubicación</div>
+      <div class="map-mock">
+        <span class="map-pin">📍</span>
+        <div class="map-label">Zibatá, Querétaro</div>
+      </div>
+
+      <div class="section-title">Asesor verificado</div>
+      <div class="asesor-card">
+        <div class="asesor-avatar">👤</div>
+        <div>
+          <div class="asesor-name">Roberto Mendoza</div>
+          <div class="asesor-role">Asesor inmobiliario</div>
+          <div class="asesor-verified">✓ Verificado · 4.9 ★</div>
+        </div>
+        <div class="asesor-contact">
+          <button class="contact-btn" onclick="showToast('📞 Llamando a Roberto...')">📞</button>
+          <button class="contact-btn" onclick="showToast('💬 Abriendo WhatsApp...')">💬</button>
+        </div>
+      </div>
+
+      <div class="detail-cta">
+        <button class="btn-primary" onclick="openVisitModal()">Agendar visita</button>
+        <button class="btn-outline-terra" onclick="goToScreen('screen-sim')">Simular crédito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 5: REELS ══════════════ -->
+  <div class="screen" id="screen-reels" style="padding-bottom:80px;">
+    <div class="reels-header">
+      <div class="reels-title">Descubrir</div>
+      <button class="icon-btn" style="background:rgba(255,255,255,.15);color:white;" onclick="showToast('🔍 Buscar propiedades...')">🔍</button>
+    </div>
+    <div class="reels-cats">
+      <div class="rcat active" onclick="setRcat(this)">✦ Para ti</div>
+      <div class="rcat" onclick="setRcat(this)">🏡 Casas</div>
+      <div class="rcat" onclick="setRcat(this)">🏢 Deptos</div>
+      <div class="rcat" onclick="setRcat(this)">🌿 Terrenos</div>
+      <div class="rcat" onclick="setRcat(this)">📈 Inversión</div>
+    </div>
+
+    <div class="reels-container" id="reels-container">
+      <!-- Reels injected by JS -->
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 6: PANEL ASESOR ══════════════ -->
+  <div class="screen" id="screen-asesor">
+    <div class="asesor-header">
+      <div class="asesor-header-inner">
+        <div class="asesor-greeting">Buenos días 👋</div>
+        <div class="asesor-panel-name">Roberto Mendoza</div>
+        <div class="asesor-plan">⭐ Plan Profesional</div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-card-num">347</div>
+            <div class="stat-card-label">Vistas este mes</div>
+            <div class="stat-card-change">↑ 24% vs mes pasado</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-num">28</div>
+            <div class="stat-card-label">Leads recibidos</div>
+            <div class="stat-card-change">↑ 12% vs mes pasado</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-num">89</div>
+            <div class="stat-card-label">Likes en propiedades</div>
+            <div class="stat-card-change">↑ 8 nuevos hoy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-num">6</div>
+            <div class="stat-card-label">Visitas agendadas</div>
+            <div class="stat-card-change">↑ 3 esta semana</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 20px 20px 0;">
+      <div class="ai-gen-card">
+        <div class="ai-card-title">Generador de descripciones con IA</div>
+        <div class="ai-card-sub">Crea textos atractivos para tus propiedades en segundos.</div>
+        <button class="btn-primary" onclick="openAiModal()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);">Generar descripción ✦</button>
+      </div>
+
+      <div class="section-title">Mis propiedades activas</div>
+      <div id="asesor-props">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="section-title" style="margin-top:8px;">Leads recientes</div>
+      <div class="leads-section" id="asesor-leads">
+        <!-- Injected by JS -->
+      </div>
+
+      <button class="btn-primary" onclick="showToast('📋 Abriendo formulario de publicación...')">+ Publicar nueva propiedad</button>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 7: SIMULADOR ══════════════ -->
+  <div class="screen" id="screen-sim">
+    <div class="sim-header">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <button onclick="goBack()" style="background:rgba(255,255,255,.2);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;">←</button>
+        <span style="font-size:14px;opacity:.8;">Simulador hipotecario</span>
+      </div>
+      <div class="sim-title">Planea tu compra con claridad</div>
+      <div class="sim-sub">Calcula una mensualidad aproximada y toma una mejor decisión.</div>
+    </div>
+
+    <div class="sim-body">
+      <div class="sim-result">
+        <div class="sim-label">Mensualidad estimada</div>
+        <div class="sim-amount" id="sim-monthly">$18,450</div>
+        <div class="sim-period">MXN / mes</div>
+        <div class="sim-breakdown">
+          <div class="sim-bd-item">
+            <div class="sim-bd-val" id="sim-total-pay">$2,214,000</div>
+            <div class="sim-bd-label">Total a pagar</div>
+          </div>
+          <div class="sim-bd-item">
+            <div class="sim-bd-val" id="sim-interest">$564,000</div>
+            <div class="sim-bd-label">Intereses totales</div>
+          </div>
+          <div class="sim-bd-item">
+            <div class="sim-bd-val" id="sim-enganche">$325,000</div>
+            <div class="sim-bd-label">Enganche</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-field">
+        <div class="sim-field-label">
+          <span>Precio de la propiedad</span>
+          <span class="sim-field-val" id="lbl-price">$3,250,000</span>
+        </div>
+        <input type="range" class="sim-range" id="s-price" min="500000" max="8000000" value="3250000" step="50000" style="--pct:34%"
+          oninput="calcSim()">
+        <div class="range-labels"><span>$500k</span><span>$4M</span><span>$8M</span></div>
+      </div>
+
+      <div class="sim-field">
+        <div class="sim-field-label">
+          <span>Enganche</span>
+          <span class="sim-field-val" id="lbl-eng">10%</span>
+        </div>
+        <input type="range" class="sim-range" id="s-eng" min="10" max="50" value="10" step="5" style="--pct:0%"
+          oninput="calcSim()">
+        <div class="range-labels"><span>10%</span><span>30%</span><span>50%</span></div>
+      </div>
+
+      <div class="sim-field">
+        <div class="sim-field-label">
+          <span>Plazo</span>
+          <span class="sim-field-val" id="lbl-plazo">20 años</span>
+        </div>
+        <input type="range" class="sim-range" id="s-plazo" min="5" max="30" value="20" step="5" style="--pct:75%"
+          oninput="calcSim()">
+        <div class="range-labels"><span>5 años</span><span>15 años</span><span>30 años</span></div>
+      </div>
+
+      <div class="sim-field">
+        <div class="sim-field-label">
+          <span>Tasa anual estimada</span>
+          <span class="sim-field-val" id="lbl-tasa">10.5%</span>
+        </div>
+        <input type="range" class="sim-range" id="s-tasa" min="8" max="18" value="10.5" step=".5" style="--pct:25%"
+          oninput="calcSim()">
+        <div class="range-labels"><span>8%</span><span>13%</span><span>18%</span></div>
+      </div>
+
+      <button class="btn-primary" onclick="showToast('🏦 Conectando con broker hipotecario...')">Hablar con un asesor hipotecario</button>
+      <div style="margin-top:10px;text-align:center;font-size:11px;color:var(--gray);">* Cálculo aproximado. No representa una oferta formal de crédito.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCREEN 8: CAPTURA LEADS ══════════════ -->
+  <div class="screen" id="screen-leads">
+    <div class="leads-hero">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <button onclick="goBack()" style="background:rgba(255,255,255,.2);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;">←</button>
+        <span style="font-size:14px;opacity:.8;">Soy asesor / inmobiliaria</span>
+      </div>
+      <div class="leads-hero-title">Recibe leads calificados y vende más rápido</div>
+      <div class="leads-hero-sub">Publica tus propiedades y conecta con compradores reales desde el primer día.</div>
+    </div>
+
+    <div class="form-body">
+      <div style="display:flex;gap:10px;overflow-x:auto;margin-bottom:24px;scrollbar-width:none;">
+        <div style="flex-shrink:0;background:var(--sand);border-radius:var(--radius);padding:14px 16px;text-align:center;min-width:100px;">
+          <div style="font-size:22px;font-weight:700;color:var(--terra);font-family:var(--font-display);">+28</div>
+          <div style="font-size:11px;color:var(--gray);">Leads/mes prom.</div>
+        </div>
+        <div style="flex-shrink:0;background:var(--sand);border-radius:var(--radius);padding:14px 16px;text-align:center;min-width:100px;">
+          <div style="font-size:22px;font-weight:700;color:var(--olive);font-family:var(--font-display);">$0</div>
+          <div style="font-size:11px;color:var(--gray);">Para empezar</div>
+        </div>
+        <div style="flex-shrink:0;background:var(--sand);border-radius:var(--radius);padding:14px 16px;text-align:center;min-width:100px;">
+          <div style="font-size:22px;font-weight:700;color:var(--black);font-family:var(--font-display);">24h</div>
+          <div style="font-size:11px;color:var(--gray);">Para publicar</div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--font-display);font-size:20px;font-weight:600;margin-bottom:18px;">¿Te interesa ser asesor en HomeMatch?</div>
+
+      <div class="form-group">
+        <label class="form-label">Nombre completo</label>
+        <input type="text" class="form-input" placeholder="Tu nombre" id="f-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">WhatsApp o celular</label>
+        <input type="tel" class="form-input" placeholder="+52 442 000 0000" id="f-phone">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" class="form-input" placeholder="correo@ejemplo.com" id="f-email">
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Ciudad</label>
+          <select class="form-select" id="f-city">
+            <option value="">Seleccionar</option>
+            <option>Querétaro</option>
+            <option>CDMX</option>
+            <option>Guadalajara</option>
+            <option>León</option>
+            <option>Celaya</option>
+            <option>Otra</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Perfil</label>
+          <select class="form-select" id="f-type">
+            <option value="">Seleccionar</option>
+            <option>Asesor independiente</option>
+            <option>Inmobiliaria</option>
+            <option>Desarrolladora</option>
+            <option>Broker hipotecario</option>
+          </select>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+
+      <div style="background:var(--sand);border-radius:var(--radius);padding:16px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--black);margin-bottom:12px;">¿Qué incluye el plan gratuito?</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);">
+            <span style="color:var(--olive);font-weight:700;">✓</span> Hasta 3 propiedades activas
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);">
+            <span style="color:var(--olive);font-weight:700;">✓</span> Recibe leads calificados
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);">
+            <span style="color:var(--olive);font-weight:700;">✓</span> Generador de textos con IA
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);">
+            <span style="color:var(--olive);font-weight:700;">✓</span> Panel de estadísticas
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);">
+            <span style="color:var(--olive);font-weight:700;">✓</span> Perfil verificado en 24h
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="submitForm()">Quiero ser asesor HomeMatch →</button>
+      <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--gray);">Al registrarte aceptas nuestros términos. Sin spam. Sin compromisos.</div>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item" onclick="goToScreen('screen-feed')" id="nav-feed">
+      <div class="nav-icon-wrap"><span class="nav-icon">⊞</span></div>
+      <span class="nav-label">Explorar</span>
+    </button>
+    <button class="nav-item" onclick="goToScreen('screen-reels')" id="nav-reels">
+      <span class="nav-icon">▷</span>
+      <span class="nav-label">Reels</span>
+    </button>
+    <button class="nav-item" onclick="showFavorites()" id="nav-favs">
+      <div class="nav-icon-wrap">
+        <span class="nav-icon">🤍</span>
+        <span class="fav-badge" id="fav-count">0</span>
+      </div>
+      <span class="nav-label">Guardados</span>
+    </button>
+    <button class="nav-item" onclick="goToScreen('screen-asesor')" id="nav-asesor">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Asesor</span>
+    </button>
+  </nav>
+
+</div><!-- /phone -->
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- AI Generator Modal -->
+<div class="modal-overlay" id="ai-modal" onclick="closeModal('ai-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✦ Generador de descripción con IA</div>
+    <div class="modal-sub">Dinos el tipo de propiedad y generamos una descripción atractiva al instante.</div>
+    <div class="ob-options" style="padding:0;gap:8px;margin-bottom:16px;">
+      <div class="ob-option" style="padding:12px 16px;" onclick="selectOption(this,'ai-type')">
+        <div class="ob-icon" style="font-size:22px;">🏡</div>
+        <div class="ob-text"><div class="ob-opt-title" style="font-size:14px;">Casa en fraccionamiento</div></div>
+        <div class="ob-check"></div>
+      </div>
+      <div class="ob-option" style="padding:12px 16px;" onclick="selectOption(this,'ai-type')">
+        <div class="ob-icon" style="font-size:22px;">🏢</div>
+        <div class="ob-text"><div class="ob-opt-title" style="font-size:14px;">Departamento urbano</div></div>
+        <div class="ob-check"></div>
+      </div>
+      <div class="ob-option" style="padding:12px 16px;" onclick="selectOption(this,'ai-type')">
+        <div class="ob-icon" style="font-size:22px;">🌿</div>
+        <div class="ob-text"><div class="ob-opt-title" style="font-size:14px;">Terreno de inversión</div></div>
+        <div class="ob-check"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="generateAI()">Generar descripción ✦</button>
+    <div style="height:14px;"></div>
+    <div class="ai-output" id="ai-output">
+      <div class="ai-typing" id="ai-typing">
+        <span></span><span></span><span></span>
+      </div>
+      <span id="ai-text" style="font-size:13px;line-height:1.7;color:var(--black);">La descripción generada aparecerá aquí...</span>
+    </div>
+    <button class="btn-secondary" onclick="copyAI()" id="copy-btn" style="display:none;">Copiar descripción</button>
+  </div>
+</div>
+
+<!-- Visit Modal -->
+<div class="modal-overlay" id="visit-modal" onclick="closeModal('visit-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Agendar visita</div>
+    <div class="modal-sub">Elige la fecha y horario que mejor te convenga.</div>
+
+    <div style="font-size:13px;font-weight:600;color:var(--black);margin-bottom:10px;">Fecha</div>
+    <div class="date-row" id="date-row">
+      <!-- JS -->
+    </div>
+
+    <div style="font-size:13px;font-weight:600;color:var(--black);margin-bottom:10px;">Horario disponible</div>
+    <div class="visit-times">
+      <div class="visit-time" onclick="selectVisitTime(this)">10:00 AM</div>
+      <div class="visit-time" onclick="selectVisitTime(this)">11:30 AM</div>
+      <div class="visit-time" onclick="selectVisitTime(this)">1:00 PM</div>
+      <div class="visit-time" onclick="selectVisitTime(this)">3:00 PM</div>
+      <div class="visit-time" onclick="selectVisitTime(this)">4:30 PM</div>
+      <div class="visit-time" onclick="selectVisitTime(this)">6:00 PM</div>
+    </div>
+
+    <button class="btn-primary" onclick="confirmVisit()">Confirmar visita →</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+// picsum.photos — mismo banco de Unsplash, CORS abierto, funciona desde file://
+// El seed asegura que cada propiedad siempre muestre la misma foto
+const PIC = (seed, w=600, h=800) =>
+  `https://picsum.photos/seed/${seed}/${w}/${h}`;
+
+const PROPS = [
+  {
+    id: 1,
+    emoji: '🏡',
+    img: PIC('zibata-casa', 600, 800),
+    gallery: [
+      PIC('zibata-ext',  800, 560),
+      PIC('zibata-sala', 800, 560),
+      PIC('zibata-coc',  800, 560),
+      PIC('zibata-jard', 800, 560),
+    ],
+    name: 'Casa moderna en Zibatá',
+    location: '📍 Zibatá, Querétaro',
+    price: '$3,250,000',
+    compat: '94%',
+    rooms: 3, baths: '2.5', cars: 2, m2: 180,
+    tags: ['💻 Home Office', '🐾 Pet Friendly', '🔐 24/7'],
+    desc: 'Casa moderna ubicada en una zona tranquila de Querétaro, ideal para familias que buscan comodidad, diseño y excelente conexión con servicios. Sus espacios luminosos y acabados contemporáneos la convierten en una excelente opción.',
+    bg: 'linear-gradient(135deg, #D4C5B0 0%, #B8A99A 100%)',
+    lifestyle: [90, 88, 85, 70, 95, 60]
+  },
+  {
+    id: 2,
+    emoji: '🏙️',
+    img: PIC('roma-norte-depto', 600, 800),
+    gallery: [
+      PIC('roma-sala',   800, 560),
+      PIC('roma-coc',    800, 560),
+      PIC('roma-rec',    800, 560),
+      PIC('roma-balcon', 800, 560),
+    ],
+    name: 'Departamento en Roma Norte',
+    location: '📍 Roma Norte, CDMX',
+    price: '$4,800,000',
+    compat: '89%',
+    rooms: 2, baths: 2, cars: 1, m2: 95,
+    tags: ['🍕 Vida social', '☕ Cafés', '🚇 Metro'],
+    desc: 'Departamento contemporáneo en el corazón de Roma Norte. Perfecto para profesionistas que disfrutan la vida cultural, gastronómica y social de la ciudad. A pasos de los mejores restaurantes, museos y parques.',
+    bg: 'linear-gradient(135deg, #C5CDD4 0%, #9AAAB8 100%)',
+    lifestyle: [75, 60, 92, 90, 65, 98]
+  },
+  {
+    id: 3,
+    emoji: '🏘️',
+    img: PIC('celaya-casa-fam', 600, 800),
+    gallery: [
+      PIC('celaya-ext',   800, 560),
+      PIC('celaya-sala',  800, 560),
+      PIC('celaya-jard',  800, 560),
+      PIC('celaya-habs',  800, 560),
+    ],
+    name: 'Casa familiar en Celaya',
+    location: '📍 Zona Norte, Celaya',
+    price: '$2,150,000',
+    compat: '91%',
+    rooms: 3, baths: 2, cars: 2, m2: 160,
+    tags: ['🏫 Escuelas', '🤫 Tranquilo', '👨‍👩‍👧 Familias'],
+    desc: 'Casa espaciosa en zona residencial tranquila, perfecta para familias con hijos. Cuenta con jardín privado, habitaciones amplias y acceso a parques y colegios de alta calidad a menos de 5 minutos.',
+    bg: 'linear-gradient(135deg, #D4D0C5 0%, #B8B5A0 100%)',
+    lifestyle: [88, 95, 82, 60, 98, 45]
+  },
+  {
+    id: 4,
+    emoji: '🌿',
+    img: PIC('terreno-leon-inv', 600, 800),
+    gallery: [
+      PIC('terreno-vista1', 800, 560),
+      PIC('terreno-vista2', 800, 560),
+      PIC('terreno-zona',   800, 560),
+      PIC('terreno-acceso', 800, 560),
+    ],
+    name: 'Terreno de inversión León',
+    location: '📍 Zona Norte, León',
+    price: '$1,250,000',
+    compat: '86%',
+    rooms: 0, baths: 0, cars: 0, m2: 300,
+    tags: ['📈 Plusvalía', '🏗️ Construye', '💰 ROI'],
+    desc: 'Terreno con alta plusvalía en zona de desarrollo activo en León. Ideal para construir propiedad de renta, casa propia o revender en 2–3 años con retorno proyectado superior al 40%. Todos los servicios disponibles.',
+    bg: 'linear-gradient(135deg, #C5D4C5 0%, #9AB8A0 100%)',
+    lifestyle: [70, 72, 65, 50, 40, 40]
+  },
+  {
+    id: 5,
+    emoji: '🏙️',
+    img: PIC('gdl-americana-pet', 600, 800),
+    gallery: [
+      PIC('gdl-sala',    800, 560),
+      PIC('gdl-coc',     800, 560),
+      PIC('gdl-roof',    800, 560),
+      PIC('gdl-ext',     800, 560),
+    ],
+    name: 'Depto pet friendly en Guadalajara',
+    location: '📍 Americana, Guadalajara',
+    price: '$3,100,000',
+    compat: '93%',
+    rooms: 2, baths: 2, cars: 1, m2: 88,
+    tags: ['🐾 Pet Friendly', '💑 Parejas', '🌇 Vista urbana'],
+    desc: 'Departamento moderno y luminoso en la colonia Americana, una de las zonas más vibrantes de Guadalajara. Permite mascotas, con rooftop, gimnasio y amenidades de primera. Diseño minimalista con acabados de lujo.',
+    bg: 'linear-gradient(135deg, #D4C5C5 0%, #B8A0A0 100%)',
+    lifestyle: [85, 78, 88, 65, 72, 92]
+  }
+];
+
+const REELS_DATA = [
+  { emoji: '🏡', img: PIC('zibata-casa', 600, 900),       name: 'Casa moderna en Zibatá',      loc: 'Querétaro',          price: '$3,250,000 MXN', compat: '94% compatible', bg: 'linear-gradient(160deg, #2D2D2D 0%, #4A3328 100%)' },
+  { emoji: '🏙️', img: PIC('roma-norte-depto', 600, 900),  name: 'Departamento en Roma Norte',  loc: 'CDMX',               price: '$4,800,000 MXN', compat: '89% compatible', bg: 'linear-gradient(160deg, #2D2D3D 0%, #1A2640 100%)' },
+  { emoji: '🌿', img: PIC('terreno-leon-inv', 600, 900),   name: 'Terreno con alta plusvalía',  loc: 'León, Guanajuato',   price: '$1,250,000 MXN', compat: '86% compatible', bg: 'linear-gradient(160deg, #1A2D1A 0%, #2D3D28 100%)' },
+  { emoji: '🏘️', img: PIC('celaya-casa-fam', 600, 900),   name: 'Casa familiar espaciosa',     loc: 'Celaya, Guanajuato', price: '$2,150,000 MXN', compat: '91% compatible', bg: 'linear-gradient(160deg, #2D2820 0%, #3D3020 100%)' },
+  { emoji: '🏙️', img: PIC('gdl-americana-pet', 600, 900), name: 'Depto pet friendly',          loc: 'Americana, Guadalajara', price: '$3,100,000 MXN', compat: '93% compatible', bg: 'linear-gradient(160deg, #281A2D 0%, #3D2040 100%)' },
+];
+
+const LEADS_DATA = [
+  { name: 'Ana García', info: 'Busca casa · Querétaro', budget: 'Presupuesto: $3.5M MXN', level: 'hot', emoji: '👩' },
+  { name: 'Carlos Reyes', info: 'Busca depto · CDMX', budget: 'Presupuesto: $5M MXN', level: 'hot', emoji: '👨' },
+  { name: 'Sofía Martínez', info: 'Inversión · Guadalajara', budget: 'Presupuesto: $2M MXN', level: 'warm', emoji: '👩‍💼' },
+  { name: 'Jorge López', info: 'Renta · Querétaro', budget: 'Presupuesto: $15k/mes', level: 'warm', emoji: '👨‍💻' },
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let currentScreen = 'screen-landing';
+let screenHistory = [];
+let currentCardIndex = 0;
+let favorites = [];
+let favCount = 0;
+let currentDetail = PROPS[0];
+let currentReel = 0;
+let selectedDate = null;
+let selectedTime = null;
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function goToScreen(id) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (!next || id === currentScreen) return;
+
+  screenHistory.push(currentScreen);
+  prev.classList.remove('active');
+  next.classList.add('active');
+  next.scrollTop = 0;
+  currentScreen = id;
+
+  const navHidden = ['screen-landing','screen-onboarding'];
+  document.getElementById('bottom-nav').style.display =
+    navHidden.includes(id) ? 'none' : 'flex';
+
+  updateNav(id);
+}
+
+function goBack() {
+  if (screenHistory.length === 0) return;
+  const prev = screenHistory.pop();
+  const curr = document.getElementById(currentScreen);
+  const target = document.getElementById(prev);
+  curr.classList.remove('active');
+  target.classList.add('active');
+  target.scrollTop = 0;
+  currentScreen = prev;
+  updateNav(prev);
+}
+
+function updateNav(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const map = {
+    'screen-feed': 'nav-feed',
+    'screen-reels': 'nav-reels',
+    'screen-asesor': 'nav-asesor',
+  };
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// LANDING
+// ══════════════════════════════════════════
+function goToOnboarding() {
+  screenHistory = [];
+  goToScreen('screen-onboarding');
+}
+function goToFeed() {
+  screenHistory = [];
+  initFeed();
+  goToScreen('screen-feed');
+}
+
+// ══════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════
+function selectOption(el, group) {
+  el.closest('.ob-step, .modal-sheet').querySelectorAll(`.ob-option`).forEach(o => {
+    if (o.dataset.group !== group && group) {
+      // allow multi-group
+    }
+    if (!el.closest('.modal-sheet')) {
+      o.classList.remove('selected');
+    }
+  });
+  el.classList.toggle('selected');
+  if (!el.closest('.modal-sheet')) {
+    el.closest('.ob-step, .modal-sheet').querySelectorAll('.ob-option').forEach(o => {
+      if (o !== el) o.classList.remove('selected');
+    });
+    el.classList.add('selected');
+  }
+}
+
+function nextStep(step) {
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`ob-step-${step}`).classList.add('active');
+  document.getElementById('ob-progress').style.width = (step / 4 * 100) + '%';
+}
+
+function updateBudget(val) {
+  const n = parseInt(val);
+  const formatted = (n >= 1000) ? `$${(n/1000).toFixed(n%1000===0?0:1)}M MXN` : `$${n}k MXN`;
+  document.getElementById('budget-display').textContent = `$${n.toLocaleString('es-MX')} MXN`;
+  const pct = Math.round(((n-3000000)*15/5000000)+40);
+  document.getElementById('prop-count').textContent = `${Math.max(20, Math.min(280, pct + 80))} propiedades`;
+
+  const pctRng = ((n - 500000) / (8000000 - 500000)) * 100;
+  document.getElementById('budget-slider').style.background =
+    `linear-gradient(to right, var(--terra) 0%, var(--terra) ${pctRng}%, var(--sand-dark) ${pctRng}%)`;
+}
+
+function togglePill(el) { el.classList.toggle('selected'); }
+
+function finishOnboarding() {
+  initFeed();
+  goToScreen('screen-feed');
+  showToast('✦ Encontramos tus mejores matches');
+}
+
+// ══════════════════════════════════════════
+// FEED + CARDS
+// ══════════════════════════════════════════
+function initFeed() {
+  const zone = document.getElementById('feed-zone');
+  zone.innerHTML = '';
+
+  PROPS.forEach((p, i) => {
+    const cls = i === 0 ? 'front' : i === 1 ? 'back' : 'back2';
+    const card = document.createElement('div');
+    card.className = `prop-card ${cls}`;
+    card.id = `card-${p.id}`;
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <div class="swipe-like" id="like-${p.id}">LIKE</div>
+      <div class="swipe-nope" id="nope-${p.id}">NOPE</div>
+      <img src="${p.img}" alt="${p.name}"
+        style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+        onerror="this.style.display='none';document.getElementById('fb-${p.id}').style.display='flex'">
+      <div id="fb-${p.id}" class="card-img-mock" style="background:${p.bg};display:none;position:absolute;inset:0;">${p.emoji}</div>
+      <div class="prop-overlay"></div>
+      <div class="prop-card-content">
+        <div class="prop-compat"><div class="compat-dot"></div>${p.compat} compatible</div>
+        <div class="prop-name">${p.name}</div>
+        <div class="prop-location">${p.location}</div>
+        <div class="prop-price">${p.price} MXN</div>
+        <div class="prop-tags">${p.tags.map(t=>`<span class="prop-tag">${t}</span>`).join('')}</div>
+      </div>
+    `;
+    zone.appendChild(card);
+    if (i === 0) setupDrag(card, p.id);
+  });
+
+  currentCardIndex = 0;
+}
+
+function setupDrag(card, id) {
+  let startX = 0, startY = 0, curX = 0;
+  let dragging = false;
+
+  const onStart = (e) => {
+    dragging = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    card.style.transition = 'none';
+  };
+  const onMove = (e) => {
+    if (!dragging) return;
+    curX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+    const curY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    const rot = curX * 0.05;
+    card.style.transform = `translateX(${curX}px) translateY(${curY*0.3}px) rotate(${rot}deg)`;
+    const likeEl = document.getElementById(`like-${id}`);
+    const nopeEl = document.getElementById(`nope-${id}`);
+    if (curX > 40) { likeEl.style.opacity = Math.min(1, curX/100); nopeEl.style.opacity = 0; }
+    else if (curX < -40) { nopeEl.style.opacity = Math.min(1, -curX/100); likeEl.style.opacity = 0; }
+    else { likeEl.style.opacity = 0; nopeEl.style.opacity = 0; }
+  };
+  const onEnd = () => {
+    if (!dragging) return;
+    dragging = false;
+    card.style.transition = 'transform .35s cubic-bezier(.4,0,.2,1)';
+    if (curX > 80) {
+      animateOut(card, 'right');
+      setTimeout(() => { registerLike(); advanceCard(); }, 350);
+    } else if (curX < -80) {
+      animateOut(card, 'left');
+      setTimeout(() => { advanceCard(); }, 350);
+    } else {
+      card.style.transform = '';
+      document.getElementById(`like-${id}`).style.opacity = 0;
+      document.getElementById(`nope-${id}`).style.opacity = 0;
+    }
+    curX = 0;
+  };
+
+  card.addEventListener('touchstart', onStart, {passive:true});
+  card.addEventListener('touchmove', onMove, {passive:true});
+  card.addEventListener('touchend', onEnd);
+  card.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+}
+
+function animateOut(card, dir) {
+  card.style.transform = `translateX(${dir === 'right' ? 600 : -600}px) rotate(${dir==='right'?30:-30}deg)`;
+  card.style.opacity = '0';
+}
+
+function advanceCard() {
+  currentCardIndex++;
+  const cards = document.querySelectorAll('.prop-card');
+  if (currentCardIndex >= PROPS.length) {
+    document.getElementById('feed-zone').innerHTML = `
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;">
+        <div style="font-size:64px;">✦</div>
+        <div style="font-family:var(--font-display);font-size:22px;font-weight:700;">¡Revisaste todo!</div>
+        <div style="font-size:14px;color:var(--gray);">Guardamos tus matches. Nuevas propiedades llegan pronto.</div>
+        <button class="btn-primary" onclick="initFeed()" style="margin-top:8px;">Ver de nuevo</button>
+      </div>`;
+    return;
+  }
+  cards.forEach((c, i) => {
+    const relIdx = i - currentCardIndex;
+    c.className = 'prop-card';
+    c.style.transform = '';
+    c.style.opacity = '1';
+    if (relIdx === 0) { c.classList.add('front'); setupDrag(c, PROPS[i].id); }
+    else if (relIdx === 1) c.classList.add('back');
+    else if (relIdx === 2) c.classList.add('back2');
+    else c.style.display = 'none';
+  });
+}
+
+function swipeCard(action) {
+  const cards = document.querySelectorAll('.prop-card.front');
+  if (!cards.length) return;
+  const card = cards[0];
+  if (action === 'like') {
+    animateOut(card, 'right');
+    registerLike();
+    setTimeout(advanceCard, 350);
+    showToast('❤️ Guardado en tus matches');
+  } else if (action === 'nope') {
+    animateOut(card, 'left');
+    setTimeout(advanceCard, 350);
+  } else if (action === 'save') {
+    registerLike();
+    showToast('🔖 Propiedad guardada');
+    card.style.animation = 'screenIn .3s ease';
+    setTimeout(() => card.style.animation = '', 300);
+  }
+}
+
+function registerLike() {
+  favCount++;
+  document.getElementById('fav-count').textContent = favCount;
+  document.getElementById('fav-count').style.display = 'flex';
+}
+
+function setFilter(el, name) {
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  showToast(`Filtrando: ${name}`);
+}
+
+// ══════════════════════════════════════════
+// DETAIL
+// ══════════════════════════════════════════
+function goToDetail() {
+  const p = PROPS[currentCardIndex] || PROPS[0];
+  currentDetail = p;
+
+  document.getElementById('detail-compat').textContent = p.compat;
+  document.getElementById('detail-price').textContent = p.price + ' MXN';
+  document.getElementById('detail-name').textContent = p.name;
+  document.getElementById('detail-loc').textContent = p.location.replace('📍 ','');
+  document.getElementById('d-rooms').textContent = p.rooms || '—';
+  document.getElementById('d-baths').textContent = p.baths || '—';
+  document.getElementById('d-cars').textContent = p.cars || '—';
+  document.getElementById('d-m2').textContent = p.m2;
+  document.getElementById('detail-desc').textContent = p.desc;
+  document.getElementById('fav-btn').textContent = favorites.includes(p.id) ? '❤️' : '🤍';
+
+  // Build gallery
+  const hero = document.getElementById('detail-hero');
+  let galleryIdx = 0;
+  const imgs = p.gallery || [p.img];
+
+  // Build gallery HTML
+  hero.innerHTML = `
+    <div id="gal-track" style="display:flex;width:100%;height:100%;transition:transform .35s cubic-bezier(.4,0,.2,1);">
+      ${imgs.map((url, i) => `
+        <div style="flex-shrink:0;width:100%;height:100%;position:relative;">
+          <img src="${url}" alt="${p.name} foto ${i+1}"
+            style="width:100%;height:100%;object-fit:cover;display:block;"
+            onerror="this.style.background='${p.bg}';this.style.display='flex';this.style.alignItems='center';this.style.justifyContent='center'">
+        </div>`).join('')}
+    </div>
+    <button class="detail-back-btn" onclick="goBack()" style="position:absolute;top:20px;left:16px;z-index:5;">←</button>
+    <button class="detail-share-btn" onclick="showToast('🔗 Link copiado al portapapeles')" style="position:absolute;top:20px;right:16px;z-index:5;">↑</button>
+    <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5;" id="gal-dots">
+      ${imgs.map((_,i)=>`<div class="gdot${i===0?' active':''}" onclick="galTo(${i})" style="cursor:pointer;"></div>`).join('')}
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(transparent,rgba(0,0,0,.18));pointer-events:none;"></div>
+  `;
+
+  // swipe gallery support
+  let gStartX = 0;
+  const track = document.getElementById('gal-track');
+  hero.addEventListener('touchstart', e => { gStartX = e.touches[0].clientX; }, {passive:true});
+  hero.addEventListener('touchend', e => {
+    const diff = gStartX - e.changedTouches[0].clientX;
+    if (diff > 40 && galleryIdx < imgs.length-1) galTo(galleryIdx+1);
+    else if (diff < -40 && galleryIdx > 0) galTo(galleryIdx-1);
+  });
+
+  window.galTo = (idx) => {
+    galleryIdx = idx;
+    document.getElementById('gal-track').style.transform = `translateX(-${idx*100}%)`;
+    document.querySelectorAll('#gal-dots .gdot').forEach((d,i) => {
+      d.classList.toggle('active', i===idx);
+    });
+  };
+
+  goToScreen('screen-detail');
+}
+
+let isFav = false;
+function toggleFav() {
+  isFav = !isFav;
+  const btn = document.getElementById('fav-btn');
+  btn.textContent = isFav ? '❤️' : '🤍';
+  btn.style.transform = 'scale(1.3)';
+  setTimeout(() => btn.style.transform = '', 200);
+  if (isFav) { showToast('❤️ Guardado en favoritos'); registerLike(); }
+  else showToast('Removido de favoritos');
+}
+
+function showFavorites() {
+  showToast(`🤍 Tienes ${favCount} propiedad${favCount!==1?'es':''} guardada${favCount!==1?'s':''}`);
+}
+
+// ══════════════════════════════════════════
+// REELS
+// ══════════════════════════════════════════
+function initReels() {
+  const container = document.getElementById('reels-container');
+  container.innerHTML = '';
+  REELS_DATA.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = `reel-item ${i===0?'active':''}`;
+    div.innerHTML = `
+      <img src="${r.img}" alt="${r.name}"
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="reel-bg" style="background:${r.bg};display:none;">${r.emoji}</div>
+      <div class="reel-overlay"></div>
+      <div class="reel-tap-area">
+        <div class="reel-tap-prev" onclick="prevReel()"></div>
+        <div class="reel-tap-next" onclick="nextReel()"></div>
+      </div>
+      <div class="reel-actions-right">
+        <button class="reel-action-btn" onclick="showToast('❤️ Like!')">
+          <div class="reel-action-icon">❤️</div>
+          <span class="reel-action-label">${Math.floor(Math.random()*200+50)}</span>
+        </button>
+        <button class="reel-action-btn" onclick="showToast('🔖 Guardado')">
+          <div class="reel-action-icon">🔖</div>
+          <span class="reel-action-label">Guardar</span>
+        </button>
+        <button class="reel-action-btn" onclick="showToast('↑ Link copiado')">
+          <div class="reel-action-icon">↑</div>
+          <span class="reel-action-label">Compartir</span>
+        </button>
+        <button class="reel-action-btn" onclick="goToDetail()">
+          <div class="reel-action-icon">→</div>
+          <span class="reel-action-label">Ver más</span>
+        </button>
+      </div>
+      <div class="reel-content">
+        <div class="reel-compat">${r.compat}</div>
+        <div class="reel-title">${r.name}</div>
+        <div class="reel-location">📍 ${r.loc}</div>
+        <div class="reel-price">${r.price}</div>
+        <button class="btn-primary" onclick="openVisitModal()" style="max-width:180px;font-size:13px;padding:12px 20px;">Agendar visita</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  updateReelDots();
+}
+
+function nextReel() {
+  if (currentReel < REELS_DATA.length - 1) {
+    switchReel(currentReel + 1);
+  }
+}
+function prevReel() {
+  if (currentReel > 0) switchReel(currentReel - 1);
+}
+function switchReel(idx) {
+  document.querySelectorAll('.reel-item').forEach(r => r.classList.remove('active'));
+  document.querySelectorAll('.reel-item')[idx].classList.add('active');
+  currentReel = idx;
+  updateReelDots();
+}
+function updateReelDots() {
+  const nav = document.querySelector('.reels-nav');
+  if (!nav) return;
+  nav.innerHTML = REELS_DATA.map((_, i) =>
+    `<div class="rdot ${i===currentReel?'active':''}" onclick="switchReel(${i})"></div>`
+  ).join('');
+}
+function setRcat(el) {
+  document.querySelectorAll('.rcat').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+  showToast(`Filtrando reels...`);
+}
+
+// ══════════════════════════════════════════
+// ASESOR PANEL
+// ══════════════════════════════════════════
+function initAsesor() {
+  const propsEl = document.getElementById('asesor-props');
+  propsEl.innerHTML = PROPS.slice(0,3).map(p => `
+    <div class="prop-list-item" onclick="goToDetail()">
+      <div class="prop-list-img" style="background:${p.bg};">${p.emoji}</div>
+      <div>
+        <div class="prop-list-name">${p.name}</div>
+        <div class="prop-list-price">${p.price} MXN</div>
+        <div class="prop-list-stats">👁️ ${Math.floor(Math.random()*80+40)} vistas · ❤️ ${Math.floor(Math.random()*20+5)} likes</div>
+      </div>
+      <div class="prop-list-arrow">›</div>
+    </div>
+  `).join('');
+
+  const leadsEl = document.getElementById('asesor-leads');
+  leadsEl.innerHTML = LEADS_DATA.map(l => `
+    <div class="lead-item">
+      <div class="lead-avatar">${l.emoji}</div>
+      <div>
+        <div class="lead-name">${l.name}</div>
+        <div class="lead-info">${l.info}</div>
+        <div class="lead-budget">${l.budget}</div>
+      </div>
+      <div class="lead-badge ${l.level}">${l.level === 'hot' ? '🔥 Hot' : '⚡ Warm'}</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// SIMULADOR
+// ══════════════════════════════════════════
+function calcSim() {
+  const price = parseFloat(document.getElementById('s-price').value);
+  const eng = parseFloat(document.getElementById('s-eng').value) / 100;
+  const plazo = parseFloat(document.getElementById('s-plazo').value);
+  const tasa = parseFloat(document.getElementById('s-tasa').value) / 100;
+
+  const engVal = price * eng;
+  const loan = price - engVal;
+  const monthly = tasa / 12;
+  const n = plazo * 12;
+  const pmt = loan * (monthly * Math.pow(1+monthly,n)) / (Math.pow(1+monthly,n)-1);
+  const total = pmt * n;
+  const interest = total - loan;
+
+  document.getElementById('sim-monthly').textContent = `$${Math.round(pmt).toLocaleString('es-MX')}`;
+  document.getElementById('sim-total-pay').textContent = `$${Math.round(total).toLocaleString('es-MX')}`;
+  document.getElementById('sim-interest').textContent = `$${Math.round(interest).toLocaleString('es-MX')}`;
+  document.getElementById('sim-enganche').textContent = `$${Math.round(engVal).toLocaleString('es-MX')}`;
+
+  document.getElementById('lbl-price').textContent = `$${(price/1000000).toFixed(1)}M`;
+  document.getElementById('lbl-eng').textContent = `${Math.round(eng*100)}%`;
+  document.getElementById('lbl-plazo').textContent = `${plazo} años`;
+  document.getElementById('lbl-tasa').textContent = `${tasa*100}%`;
+
+  // update range gradients
+  ['s-price','s-eng','s-plazo','s-tasa'].forEach(id => {
+    const el = document.getElementById(id);
+    const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+    el.style.background = `linear-gradient(to right, var(--terra) 0%, var(--terra) ${pct}%, var(--sand-dark) ${pct}%)`;
+  });
+}
+
+// ══════════════════════════════════════════
+// LEADS FORM
+// ══════════════════════════════════════════
+function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  if (!name || !phone || !email) {
+    showToast('⚠️ Por favor llena todos los campos');
+    return;
+  }
+  showToast(`✦ ¡Listo, ${name.split(' ')[0]}! Te contactamos pronto.`);
+  ['f-name','f-phone','f-email'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ══════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function openAiModal() { openModal('ai-modal'); }
+function openVisitModal() {
+  // populate dates
+  const row = document.getElementById('date-row');
+  row.innerHTML = '';
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const today = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const chip = document.createElement('div');
+    chip.className = 'date-chip';
+    chip.innerHTML = `<div class="date-day">${days[d.getDay()]}</div><div class="date-num">${d.getDate()}</div>`;
+    chip.onclick = () => { document.querySelectorAll('.date-chip').forEach(c=>c.classList.remove('selected')); chip.classList.add('selected'); selectedDate = d; };
+    row.appendChild(chip);
+  }
+  openModal('visit-modal');
+}
+function selectVisitTime(el) {
+  document.querySelectorAll('.visit-time').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTime = el.textContent;
+}
+function confirmVisit() {
+  if (!selectedDate || !selectedTime) { showToast('⚠️ Elige fecha y horario'); return; }
+  closeModal('visit-modal');
+  showToast(`✅ Visita agendada: ${selectedDate.getDate()} · ${selectedTime}`);
+}
+
+const AI_DESCRIPTIONS = [
+  "Casa moderna ubicada en una zona tranquila de Querétaro, ideal para familias que buscan comodidad, diseño y excelente conexión con servicios. Sus espacios luminosos, acabados contemporáneos y distribución funcional la convierten en una opción excepcional.",
+  "Departamento de diseño contemporáneo en el corazón de la ciudad. Espacios pensados para el profesionista moderno que valora la ubicación, la calidad de vida y el acceso inmediato a servicios, gastronomía y cultura.",
+  "Terreno de inversión con alta plusvalía en zona de desarrollo activo. Ideal para construir patrimonio, desarrollar propiedad de renta o revender con retorno proyectado superior al 40% en un horizonte de 3 años."
+];
+let aiGenerated = false;
+
+function generateAI() {
+  const output = document.getElementById('ai-output');
+  const typing = document.getElementById('ai-typing');
+  const text = document.getElementById('ai-text');
+  const copyBtn = document.getElementById('copy-btn');
+
+  text.style.display = 'none';
+  typing.style.display = 'block';
+  copyBtn.style.display = 'none';
+
+  setTimeout(() => {
+    typing.style.display = 'none';
+    text.style.display = 'block';
+    text.textContent = AI_DESCRIPTIONS[Math.floor(Math.random() * AI_DESCRIPTIONS.length)];
+    copyBtn.style.display = 'block';
+    aiGenerated = true;
+  }, 2000);
+}
+
+function copyAI() {
+  const text = document.getElementById('ai-text').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  showToast('📋 Descripción copiada');
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('bottom-nav').style.display = 'none';
+  initFeed();
+  initReels();
+  initAsesor();
+  calcSim();
+
+  // Preload card images so they're ready when the user swipes
+  PROPS.forEach(p => {
+    const img = new Image();
+    img.src = p.img;
+  });
+  REELS_DATA.forEach(r => {
+    const img = new Image();
+    img.src = r.img;
+  });
+
+  // Add reels dot nav
+  const reelsContainer = document.getElementById('reels-container');
+  const dotNav = document.createElement('div');
+  dotNav.className = 'reels-nav';
+  dotNav.id = 'reels-dot-nav';
+  reelsContainer.appendChild(dotNav);
+  updateReelDots();
+});
+</script>
+</body>
+</html>
