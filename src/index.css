@@ -12,3 +12,39 @@
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
 }
+
+/* Range input thumb — not expressible via Tailwind utilities */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #c2714f;
+  box-shadow: 0 2px 8px rgba(194, 113, 79, 0.4);
+  cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #c2714f;
+  box-shadow: 0 2px 8px rgba(194, 113, 79, 0.4);
+  cursor: pointer;
+  border: none;
+}
+
+/* Utility: hide scrollbar cross-browser */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
