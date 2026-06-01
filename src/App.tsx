@@ -4,6 +4,7 @@ import LandingScreen from './screens/LandingScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import DiscoverScreen from './screens/DiscoverScreen'
 import PropertyDetailScreen from './screens/PropertyDetailScreen'
+import ReelsScreen from './screens/ReelsScreen'
 import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
@@ -36,7 +37,8 @@ function App() {
           onBack={() => setScreen('feed')}
         />
       )}
-      {(screen === 'reels' || screen === 'saved' || screen === 'advisor') && (
+      {screen === 'reels' && <ReelsScreen />}
+      {(screen === 'saved' || screen === 'advisor') && (
         <div className="flex-1 flex items-center justify-center font-body text-[#6B6B6B]">
           <p>Pantalla «{screen}» — próximamente</p>
         </div>

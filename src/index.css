@@ -41,6 +41,12 @@ input[type='range']::-moz-range-thumb {
   border: none;
 }
 
+/* Reel "playing" animation */
+@keyframes reelBreathe {
+  0%, 100% { filter: brightness(1.00) saturate(1.00); }
+  50%       { filter: brightness(1.12) saturate(1.15); }
+}
+
 /* Utility: hide scrollbar cross-browser */
 .no-scrollbar {
   scrollbar-width: none;
