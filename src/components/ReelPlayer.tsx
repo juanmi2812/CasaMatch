@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import type { PropiedadMock } from '../services/mockData'
+import Toast from './ui/Toast'
 
 interface Props {
   property:        PropiedadMock
@@ -17,9 +19,10 @@ function fmtPrice(n: number): string {
 
 export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }: Props) {
   const playerRef              = useRef<HTMLDivElement>(null)
-  const [isActive, setIsActive] = useState(false)
-  const [isLiked,  setIsLiked]  = useState(false)
-  const [isSaved,  setIsSaved]  = useState(false)
+  const [isActive,   setIsActive]   = useState(false)
+  const [isLiked,    setIsLiked]    = useState(false)
+  const [isSaved,    setIsSaved]    = useState(false)
+  const [showToast,  setShowToast]  = useState(false)
 
   // IntersectionObserver: play only when ≥ 80 % visible
   useEffect(() => {
@@ -45,6 +48,11 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   function handleSave() {
     if (!isAuthenticated) { onAuthRequired(); return }
     setIsSaved((v) => !v)
+  }
+
+  function handleShare() {
+    const url = `${window.location.origin}?propertyId=${property.id}`
+    navigator.clipboard.writeText(url).then(() => setShowToast(true))
   }
 
   const likeCount  = property.compatibilidad * 4 + 17
@@ -139,7 +147,7 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
 
         {/* Share */}
         <ActionBtn
-          onClick={() => {/* stub */}}
+          onClick={handleShare}
           active={false}
           count={shareCount}
           icon="↗"
@@ -191,6 +199,12 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
           📅 Agendar visita
         </button>
       </div>
+      {/* Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <Toast message="🔗 Enlace copiado" onDismiss={() => setShowToast(false)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

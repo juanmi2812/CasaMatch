@@ -8,6 +8,7 @@ import {
 } from 'framer-motion'
 import type { PanInfo } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
+import Toast from '../components/ui/Toast'
 import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
 
 const SWIPE_THRESHOLD = 100
@@ -234,6 +235,7 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   const [showAuthModal,    setShowAuthModal]   = useState(false)
   const [pendingAction,    setPendingAction]   = useState<'like' | null>(null)
   const [activeFilter,     setActiveFilter]    = useState<FilterTab>('Todos')
+  const [showToast,        setShowToast]       = useState(false)
 
   const topCardRef = useRef<DraggableCardHandle>(null)
 
@@ -271,6 +273,12 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   function handleDismiss() {
     setShowAuthModal(false)
     setPendingAction(null)
+  }
+
+  function handleShare() {
+    if (cards.length === 0) return
+    const url = `${window.location.origin}?propertyId=${cards[0].id}`
+    navigator.clipboard.writeText(url).then(() => setShowToast(true))
   }
 
   return (
@@ -405,6 +413,19 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
           <span className="text-[17px] leading-none" style={{ color: '#C2714F' }}>ℹ</span>
         </button>
 
+        {/* SHARE */}
+        <button
+          onClick={handleShare}
+          disabled={cards.length === 0}
+          className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
+          style={{
+            background: 'white',
+            boxShadow:  '0 4px 14px rgba(0,0,0,0.09)',
+          }}
+        >
+          <span className="text-[17px] leading-none" style={{ color: '#6B6B6B' }}>↗</span>
+        </button>
+
         {/* LIKE */}
         <button
           onClick={handleLike}
@@ -423,6 +444,13 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
       <AnimatePresence>
         {showAuthModal && (
           <AuthModal onRegister={handleRegister} onDismiss={handleDismiss} />
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <Toast message="🔗 Enlace copiado" onDismiss={() => setShowToast(false)} />
         )}
       </AnimatePresence>
     </div>
