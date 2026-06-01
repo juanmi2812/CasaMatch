@@ -220,9 +220,15 @@ DraggableCard.displayName = 'DraggableCard'
 const FILTER_TABS = ['Todos', 'Casas', 'Deptos', 'Comercial'] as const
 type FilterTab = (typeof FILTER_TABS)[number]
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface Props {
+  onViewDetail: (property: PropiedadMock) => void
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-export default function DiscoverScreen() {
+export default function DiscoverScreen({ onViewDetail }: Props) {
   const [cards,            setCards]           = useState<PropiedadMock[]>(MOCK_PROPERTIES)
   const [isAuthenticated,  setIsAuthenticated] = useState(false)
   const [showAuthModal,    setShowAuthModal]   = useState(false)
@@ -388,6 +394,7 @@ export default function DiscoverScreen() {
 
         {/* INFO */}
         <button
+          onClick={() => cards.length > 0 && onViewDetail(cards[0])}
           disabled={cards.length === 0}
           className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
           style={{

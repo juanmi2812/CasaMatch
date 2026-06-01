@@ -3,10 +3,18 @@ import PhoneShell, { type Screen } from './components/PhoneShell'
 import LandingScreen from './screens/LandingScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import DiscoverScreen from './screens/DiscoverScreen'
+import PropertyDetailScreen from './screens/PropertyDetailScreen'
+import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('landing')
+  const [screen,           setScreen]           = useState<Screen>('landing')
+  const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
+
+  function viewDetail(property: PropiedadMock) {
+    setSelectedProperty(property)
+    setScreen('detail')
+  }
 
   return (
     <PhoneShell screen={screen} onNavigate={setScreen}>
@@ -20,7 +28,13 @@ function App() {
         <OnboardingScreen onComplete={() => setScreen('feed')} />
       )}
       {screen === 'feed' && (
-        <DiscoverScreen />
+        <DiscoverScreen onViewDetail={viewDetail} />
+      )}
+      {screen === 'detail' && selectedProperty && (
+        <PropertyDetailScreen
+          property={selectedProperty}
+          onBack={() => setScreen('feed')}
+        />
       )}
       {(screen === 'reels' || screen === 'saved' || screen === 'advisor') && (
         <div className="flex-1 flex items-center justify-center font-body text-[#6B6B6B]">

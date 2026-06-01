@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor'
+export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'detail'
 
 interface Props {
   screen: Screen
