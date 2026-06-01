@@ -162,27 +162,40 @@ export interface Database {
         Row:    Perfil
         Insert: PerfilInsert
         Update: PerfilUpdate
+        Relationships: []
       }
       preferencias_onboarding: {
         Row:    PreferenciaOnboarding
         Insert: PreferenciaOnboardingInsert
         Update: PreferenciaOnboardingUpdate
+        Relationships: []
       }
       propiedades: {
         Row:    Propiedad
         Insert: PropiedadInsert
         Update: PropiedadUpdate
+        Relationships: []
       }
       interacciones_swipes: {
         Row:    InteraccionSwipe
         Insert: InteraccionSwipeInsert
         Update: InteraccionSwipeUpdate
+        Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
     }
     Enums: {
       rol_usuario:      RolUsuario
       tipo_operacion:   TipoOperacion
       tipo_interaccion: TipoInteraccion
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

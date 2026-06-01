@@ -9,6 +9,8 @@ import {
 import type { PanInfo } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
 import Toast from '../components/ui/Toast'
+import { useAuth } from '../context/AuthContext'
+import { recordSwipe } from '../services/propertyService'
 import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
 
 const SWIPE_THRESHOLD = 100
@@ -230,12 +232,14 @@ interface Props {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function DiscoverScreen({ onViewDetail }: Props) {
-  const [cards,            setCards]           = useState<PropiedadMock[]>(MOCK_PROPERTIES)
-  const [isAuthenticated,  setIsAuthenticated] = useState(false)
-  const [showAuthModal,    setShowAuthModal]   = useState(false)
-  const [pendingAction,    setPendingAction]   = useState<'like' | null>(null)
-  const [activeFilter,     setActiveFilter]    = useState<FilterTab>('Todos')
-  const [showToast,        setShowToast]       = useState(false)
+  const { session } = useAuth()
+  const isAuthenticated = !!session
+
+  const [cards,         setCards]        = useState<PropiedadMock[]>(MOCK_PROPERTIES)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'like' | null>(null)
+  const [activeFilter,  setActiveFilter] = useState<FilterTab>('Todos')
+  const [showToast,     setShowToast]    = useState(false)
 
   const topCardRef = useRef<DraggableCardHandle>(null)
 
@@ -262,7 +266,6 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   }
 
   function handleRegister() {
-    setIsAuthenticated(true)
     setShowAuthModal(false)
     if (pendingAction === 'like') {
       setPendingAction(null)
@@ -273,6 +276,13 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   function handleDismiss() {
     setShowAuthModal(false)
     setPendingAction(null)
+  }
+
+  function handleSwipeRight() {
+    if (cards.length > 0) {
+      recordSwipe(cards[0].id, 'like')
+    }
+    removeTopCard()
   }
 
   function handleShare() {
@@ -378,7 +388,7 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
               isTop
               requiresAuth={!isAuthenticated}
               onSwipeLeft={removeTopCard}
-              onSwipeRight={removeTopCard}
+              onSwipeRight={handleSwipeRight}
               onAuthRequired={handleAuthRequired}
             />
           </>

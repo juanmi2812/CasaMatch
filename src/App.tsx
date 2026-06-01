@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AuthProvider } from './context/AuthContext'
 import PhoneShell, { type Screen } from './components/PhoneShell'
 import LandingScreen from './screens/LandingScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
@@ -19,6 +20,7 @@ function App() {
   }
 
   return (
+    <AuthProvider>
     <PhoneShell screen={screen} onNavigate={setScreen}>
       {screen === 'landing' && (
         <LandingScreen
@@ -46,6 +48,7 @@ function App() {
         </div>
       )}
     </PhoneShell>
+    </AuthProvider>
   )
 }
 
