@@ -1,21 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AIGeneratorModal from '../components/ui/AIGeneratorModal'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient'
+import type { KpisAsesor } from '../types/database'
 
-interface Metric {
-  label: string
-  value: string
-  delta: string
-  up:    boolean
-  icon:  string
-}
+// ─── Mock fallback data for leads / active properties ─────────────────────────
 
 interface Lead {
-  name:      string
-  property:  string
-  time:      string
-  hot:       boolean
-  avatar:    string
+  name:     string
+  property: string
+  time:     string
+  hot:      boolean
+  avatar:   string
 }
 
 interface ActiveProperty {
@@ -28,28 +25,63 @@ interface ActiveProperty {
   gradient:  [string, string]
 }
 
-const METRICS: Metric[] = [
-  { label: 'Vistas hoy',  value: '1,284', delta: '+12%',  up: true,  icon: '👁' },
-  { label: 'Leads',       value: '47',    delta: '+8',     up: true,  icon: '📩' },
-  { label: 'Likes',       value: '312',   delta: '+23%',  up: true,  icon: '♥' },
-  { label: 'Visitas ag.', value: '9',     delta: '-2',     up: false, icon: '📅' },
+const MOCK_LEADS: Lead[] = [
+  { name: 'Ana Martínez',  property: 'Juriquilla · Casa',      time: 'Hace 5 min',  hot: true,  avatar: '👩' },
+  { name: 'Luis Herrera',  property: 'Polanco · Loft',         time: 'Hace 18 min', hot: true,  avatar: '👨' },
+  { name: 'Sofía Ramos',   property: 'Campanario · Penthouse', time: 'Hace 1 h',    hot: false, avatar: '👩‍💼' },
+  { name: 'Carlos Medina', property: 'Chapultepec · PH',       time: 'Hace 2 h',    hot: false, avatar: '🧑' },
 ]
 
-const LEADS: Lead[] = [
-  { name: 'Ana Martínez',    property: 'Juriquilla · Casa',       time: 'Hace 5 min',  hot: true,  avatar: '👩' },
-  { name: 'Luis Herrera',    property: 'Polanco · Loft',          time: 'Hace 18 min', hot: true,  avatar: '👨' },
-  { name: 'Sofía Ramos',     property: 'Campanario · Penthouse',  time: 'Hace 1 h',    hot: false, avatar: '👩‍💼' },
-  { name: 'Carlos Medina',   property: 'Chapultepec · PH',        time: 'Hace 2 h',    hot: false, avatar: '🧑' },
+const MOCK_ACTIVE_PROPERTIES: ActiveProperty[] = [
+  { titulo: 'Juriquilla · Casa',    tipo: 'Casa',  vistas: 540, likes:  128, maxVistas: 600, emoji: '🏡', gradient: ['#C9A87C', '#6B7C5C'] },
+  { titulo: 'Polanco · Loft',       tipo: 'Depto', vistas: 380, likes:   94, maxVistas: 600, emoji: '🏙', gradient: ['#9B8EC4', '#C2714F'] },
+  { titulo: 'Campanario · Casa',    tipo: 'Casa',  vistas: 290, likes:   67, maxVistas: 600, emoji: '🌲', gradient: ['#7B9E87', '#4A7C6F'] },
 ]
 
-const ACTIVE_PROPERTIES: ActiveProperty[] = [
-  { titulo: 'Juriquilla · Casa',       tipo: 'Casa',       vistas: 540, likes: 128, maxVistas: 600, emoji: '🏡', gradient: ['#C9A87C', '#6B7C5C'] },
-  { titulo: 'Polanco · Loft',          tipo: 'Depto',      vistas: 380, likes:  94, maxVistas: 600, emoji: '🏙', gradient: ['#9B8EC4', '#C2714F'] },
-  { titulo: 'Campanario · Casa',       tipo: 'Casa',       vistas: 290, likes:  67, maxVistas: 600, emoji: '🌲', gradient: ['#7B9E87', '#4A7C6F'] },
-]
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdvisorDashboard() {
+  const { session } = useAuth()
+  const [kpis,       setKpis]       = useState<KpisAsesor | null>(null)
+  const [kpisLoading, setKpisLoading] = useState(true)
   const [showAIModal, setShowAIModal] = useState(false)
+
+  useEffect(() => {
+    if (!session?.user) { setKpisLoading(false); return }
+
+    supabase
+      .from('kpis_asesores')
+      .select('*')
+      .eq('asesor_id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setKpis(data as KpisAsesor)
+        setKpisLoading(false)
+      })
+  }, [session])
+
+  const metrics = [
+    {
+      label: 'Propiedades',
+      value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(),
+      delta: '+activas', up: true, icon: '🏠',
+    },
+    {
+      label: 'Leads',
+      value: kpisLoading ? '—' : (kpis?.total_leads ?? 0).toLocaleString(),
+      delta: 'únicos', up: true, icon: '📩',
+    },
+    {
+      label: 'Likes',
+      value: kpisLoading ? '—' : (kpis?.total_likes ?? 0).toLocaleString(),
+      delta: 'total', up: true, icon: '♥',
+    },
+    {
+      label: 'Guardados',
+      value: kpisLoading ? '—' : (kpis?.total_saves ?? 0).toLocaleString(),
+      delta: 'total', up: true, icon: '🔖',
+    },
+  ]
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
@@ -81,18 +113,18 @@ export default function AdvisorDashboard() {
         <div
           className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-[20px]"
           style={{
-            background:  'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
-            boxShadow:   '0 4px 14px rgba(194,113,79,0.38)',
+            background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
+            boxShadow:  '0 4px 14px rgba(194,113,79,0.38)',
           }}
         >
           🧑‍💼
         </div>
       </div>
 
-      {/* Metrics grid */}
+      {/* Metrics grid — from kpis_asesores view */}
       <div className="px-4 mb-5">
         <div className="grid grid-cols-2 gap-3">
-          {METRICS.map((m) => (
+          {metrics.map((m) => (
             <motion.div
               key={m.label}
               initial={{ opacity: 0, y: 12 }}
@@ -129,11 +161,11 @@ export default function AdvisorDashboard() {
           <button className="text-[12px] font-semibold" style={{ color: '#C2714F' }}>Ver todos</button>
         </div>
         <div className="rounded-[20px] overflow-hidden" style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-          {LEADS.map((lead, i) => (
+          {MOCK_LEADS.map((lead, i) => (
             <div
               key={lead.name}
               className="flex items-center gap-3 px-4 py-3"
-              style={{ borderBottom: i < LEADS.length - 1 ? '1px solid #F0EAE1' : 'none' }}
+              style={{ borderBottom: i < MOCK_LEADS.length - 1 ? '1px solid #F0EAE1' : 'none' }}
             >
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[18px]"
@@ -144,11 +176,7 @@ export default function AdvisorDashboard() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>{lead.name}</p>
-                  {lead.hot ? (
-                    <span className="text-[11px]">🔥</span>
-                  ) : (
-                    <span className="text-[11px]">🌡️</span>
-                  )}
+                  <span className="text-[11px]">{lead.hot ? '🔥' : '🌡️'}</span>
                   <span
                     className="text-[10px] font-bold px-1.5 py-[1px] rounded-full"
                     style={{
@@ -182,14 +210,13 @@ export default function AdvisorDashboard() {
           <button className="text-[12px] font-semibold" style={{ color: '#C2714F' }}>Agregar</button>
         </div>
         <div className="flex flex-col gap-3">
-          {ACTIVE_PROPERTIES.map((prop) => (
+          {MOCK_ACTIVE_PROPERTIES.map((prop) => (
             <div
               key={prop.titulo}
               className="rounded-[20px] overflow-hidden"
               style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
             >
               <div className="flex items-center gap-3 p-4">
-                {/* Mini thumbnail */}
                 <div
                   className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[24px]"
                   style={{ background: `linear-gradient(135deg, ${prop.gradient[0]} 0%, ${prop.gradient[1]} 100%)` }}
@@ -210,7 +237,6 @@ export default function AdvisorDashboard() {
                     <span className="text-[11px]" style={{ color: '#9B9B9B' }}>👁 {prop.vistas.toLocaleString()}</span>
                     <span className="text-[11px]" style={{ color: '#9B9B9B' }}>♥ {prop.likes}</span>
                   </div>
-                  {/* Progress bar */}
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F0EAE1' }}>
                     <motion.div
                       initial={{ width: 0 }}
@@ -236,7 +262,6 @@ export default function AdvisorDashboard() {
             boxShadow:  '0 8px 28px rgba(194,113,79,0.40)',
           }}
         >
-          {/* BG watermark */}
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[80px] select-none pointer-events-none" style={{ opacity: 0.12 }}>
             ✨
           </div>
@@ -264,7 +289,6 @@ export default function AdvisorDashboard() {
         </div>
       </div>
 
-      {/* AI modal */}
       <AnimatePresence>
         {showAIModal && (
           <AIGeneratorModal onDismiss={() => setShowAIModal(false)} />

@@ -358,3 +358,72 @@ CREATE POLICY "swipes: usuario actualiza los suyos"
 CREATE POLICY "swipes: usuario elimina los suyos"
   ON interacciones_swipes FOR DELETE TO authenticated
   USING (usuario_id = auth.uid());
+
+
+-- =============================================================
+-- 9. POLÍTICAS ADMIN (usa app_metadata — no editable por usuario)
+-- =============================================================
+
+CREATE POLICY "admin: leer todos los perfiles"
+  ON perfiles FOR SELECT TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');
+
+CREATE POLICY "admin: leer todas las propiedades"
+  ON propiedades FOR SELECT TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');
+
+CREATE POLICY "admin: leer todos los swipes"
+  ON interacciones_swipes FOR SELECT TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');
+
+
+-- =============================================================
+-- 10. VISTAS ANALÍTICAS
+--
+-- security_invoker = true: la vista se ejecuta con los permisos
+-- del usuario llamante, aplicando RLS normalmente.
+--
+-- kpis_asesores: un asesor ve SÓLO sus propios KPIs.
+-- kpis_globales: el admin ve agregados de TODA la plataforma
+--                (requiere la política admin de cada tabla).
+-- =============================================================
+
+CREATE VIEW kpis_asesores
+  WITH (security_invoker = true)
+AS
+SELECT
+  p.asesor_id,
+  COUNT(DISTINCT p.id)                                                          AS total_propiedades,
+  COUNT(sw.id) FILTER (WHERE sw.tipo_interaccion = 'like')                     AS total_likes,
+  COUNT(sw.id) FILTER (WHERE sw.tipo_interaccion = 'save')                     AS total_saves,
+  COUNT(DISTINCT sw.usuario_id)
+    FILTER (WHERE sw.tipo_interaccion IN ('like', 'save'))                     AS total_leads
+FROM propiedades p
+LEFT JOIN interacciones_swipes sw ON sw.propiedad_id = p.id
+GROUP BY p.asesor_id;
+
+COMMENT ON VIEW kpis_asesores IS
+  'KPIs por asesor: total de propiedades, likes, saves y leads únicos. '
+  'Con security_invoker cada asesor ve únicamente sus propios datos vía RLS.';
+
+
+CREATE VIEW kpis_globales
+  WITH (security_invoker = true)
+AS
+SELECT
+  (SELECT COUNT(*)          FROM propiedades
+   WHERE activa = TRUE)                                                         AS propiedades_activas,
+  (SELECT COUNT(*)          FROM perfiles
+   WHERE rol = 'asesor')                                                        AS total_asesores,
+  (SELECT COUNT(*)          FROM perfiles
+   WHERE rol = 'usuario')                                                       AS total_usuarios,
+  (SELECT COUNT(*)          FROM interacciones_swipes
+   WHERE tipo_interaccion = 'like')                                             AS total_likes,
+  (SELECT COUNT(*)          FROM interacciones_swipes
+   WHERE tipo_interaccion = 'save')                                             AS total_saves,
+  (SELECT COUNT(DISTINCT usuario_id) FROM interacciones_swipes
+   WHERE tipo_interaccion IN ('like', 'save'))                                  AS total_leads;
+
+COMMENT ON VIEW kpis_globales IS
+  'Agregados globales de la plataforma. Sólo accesible por usuarios con '
+  'app_metadata.rol = admin vía las políticas RLS de admin.';

@@ -151,6 +151,27 @@ export interface LeadAsesor {
 }
 
 // =============================================================
+// VIEW ROW TYPES
+// =============================================================
+
+export interface KpisAsesor {
+  asesor_id:         string
+  total_propiedades: number
+  total_likes:       number
+  total_saves:       number
+  total_leads:       number
+}
+
+export interface KpisGlobales {
+  propiedades_activas: number
+  total_asesores:      number
+  total_usuarios:      number
+  total_likes:         number
+  total_saves:         number
+  total_leads:         number
+}
+
+// =============================================================
 // DATABASE — mapa de tipos compatible con supabase-js v2
 // Uso: createClient<Database>(url, key)
 // =============================================================
@@ -184,7 +205,18 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      kpis_asesores: {
+        Row:          KpisAsesor
+        Insert:       { [_ in never]: never }
+        Update:       { [_ in never]: never }
+        Relationships: []
+      }
+      kpis_globales: {
+        Row:          KpisGlobales
+        Insert:       { [_ in never]: never }
+        Update:       { [_ in never]: never }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

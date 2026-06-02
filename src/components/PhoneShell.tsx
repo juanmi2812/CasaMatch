@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'detail'
+export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'admin' | 'detail'
 
 interface Props {
   screen: Screen
@@ -16,17 +16,31 @@ const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string }> = [
   { id: 'advisor', icon: '👤', label: 'Asesor'    },
 ]
 
-const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor']
+const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin']
 
 export default function PhoneShell({ screen, onNavigate, children }: Props) {
   const showNav = POST_ONBOARDING.includes(screen)
 
   return (
-    <div className="min-h-svh bg-[#F0EBE3] flex justify-center">
-      <div className="relative w-full max-w-[390px] min-h-svh bg-sand overflow-hidden flex flex-col">
+    // md+: render a "phone device" centered on a warm desktop background
+    // <md : pure full-screen native web-app experience (no chrome)
+    <div className="
+      w-full h-screen overflow-hidden flex flex-col bg-sand
+      md:h-auto md:min-h-screen md:overflow-visible
+      md:bg-[#E0D8CE] md:flex md:flex-col md:items-center md:justify-start md:py-8
+    ">
+      {/* Phone frame */}
+      <div className="
+        relative flex flex-col overflow-hidden bg-sand
+        w-full h-screen
+        md:h-auto md:min-h-[844px] md:w-[390px]
+        md:rounded-[44px]
+        md:shadow-[0_36px_72px_rgba(0,0,0,0.22),0_8px_24px_rgba(0,0,0,0.10)]
+        md:border md:border-black/[0.08]
+      ">
 
         {/* Screen area with animated transitions */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={screen}
@@ -42,10 +56,18 @@ export default function PhoneShell({ screen, onNavigate, children }: Props) {
           </AnimatePresence>
         </div>
 
-        {/* Bottom Navigation — only post-onboarding */}
+        {/* Bottom Navigation — only post-onboarding
+            mobile:  fixed to viewport bottom
+            desktop: absolute to phone-frame bottom (clipped by rounded corners) */}
         {showNav && (
           <nav
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] flex justify-around items-center pt-2.5 pb-5 z-[100] border-t border-black/[0.07]"
+            className="
+              fixed bottom-0 left-1/2 -translate-x-1/2 z-[100]
+              w-full max-w-[390px]
+              flex justify-around items-center pt-2.5 pb-5
+              border-t border-black/[0.07]
+              md:absolute md:bottom-0 md:left-0 md:translate-x-0 md:max-w-none
+            "
             style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}
           >
             {NAV_ITEMS.map(({ id, icon, label }) => {

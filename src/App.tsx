@@ -7,6 +7,7 @@ import DiscoverScreen from './screens/DiscoverScreen'
 import PropertyDetailScreen from './screens/PropertyDetailScreen'
 import ReelsScreen from './screens/ReelsScreen'
 import AdvisorDashboard from './screens/AdvisorDashboard'
+import AdminDashboard from './screens/AdminDashboard'
 import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
@@ -42,6 +43,7 @@ function App() {
       )}
       {screen === 'reels' && <ReelsScreen />}
       {screen === 'advisor' && <AdvisorDashboard />}
+      {screen === 'admin'   && <AdminDashboard />}
       {screen === 'saved' && (
         <div className="flex-1 flex items-center justify-center font-body text-[#6B6B6B]">
           <p>Pantalla «{screen}» — próximamente</p>
