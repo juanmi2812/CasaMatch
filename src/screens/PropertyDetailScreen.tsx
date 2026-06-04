@@ -27,18 +27,22 @@ function formatPrice(n: number): string {
   return `$${(n / 1_000).toFixed(0)}k MXN`
 }
 
-const GALLERY_COUNT = 4
-
 export default function PropertyDetailScreen({ property, onBack }: Props) {
   const [galleryIdx,  setGalleryIdx]  = useState(0)
   const pointerStart                  = useRef(0)
 
-  const slides = [
-    { from: property.gradientFrom, to: property.gradientTo   },
-    { from: property.gradientTo,   to: '#2C2C3E'             },
-    { from: '#5C6E4A',             to: property.gradientFrom },
-    { from: '#1A1A1A',             to: property.gradientTo   },
-  ]
+  // Use real images from DB when available; fall back to gradient variants
+  const slides: Array<{ imageUrl?: string; from?: string; to?: string }> =
+    property.imagenes && property.imagenes.length > 0
+      ? property.imagenes.map((url) => ({ imageUrl: url }))
+      : [
+          { from: property.gradientFrom, to: property.gradientTo   },
+          { from: property.gradientTo,   to: '#2C2C3E'             },
+          { from: '#5C6E4A',             to: property.gradientFrom },
+          { from: '#1A1A1A',             to: property.gradientTo   },
+        ]
+
+  const GALLERY_COUNT = slides.length
 
   return (
     <div className="flex flex-col bg-white">
@@ -68,16 +72,20 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
               key={i}
               className="flex items-center justify-center flex-shrink-0"
               style={{
-                width:      `${100 / GALLERY_COUNT}%`,
-                background: `linear-gradient(160deg, ${s.from} 0%, ${s.to} 100%)`,
+                width: `${100 / GALLERY_COUNT}%`,
+                ...(s.imageUrl
+                  ? { backgroundImage: `url(${s.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : { background: `linear-gradient(160deg, ${s.from} 0%, ${s.to} 100%)` }),
               }}
             >
-              <span
-                className="text-[110px] select-none pointer-events-none"
-                style={{ opacity: 0.10 }}
-              >
-                {property.emoji}
-              </span>
+              {!s.imageUrl && (
+                <span
+                  className="text-[110px] select-none pointer-events-none"
+                  style={{ opacity: 0.10 }}
+                >
+                  {property.emoji}
+                </span>
+              )}
             </div>
           ))}
         </div>

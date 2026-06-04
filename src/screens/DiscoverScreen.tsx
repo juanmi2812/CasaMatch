@@ -105,7 +105,9 @@ const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
         <div
           className="absolute inset-0 rounded-[28px] overflow-hidden"
           style={{
-            background: `linear-gradient(160deg, ${card.gradientFrom} 0%, ${card.gradientTo} 100%)`,
+            ...(card.imagenes?.[0]
+              ? { backgroundImage: `url(${card.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: `linear-gradient(160deg, ${card.gradientFrom} 0%, ${card.gradientTo} 100%)` }),
             boxShadow: '0 20px 60px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.10)',
           }}
         >
@@ -372,7 +374,9 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
               <div
                 className="absolute inset-0 rounded-[28px]"
                 style={{
-                  background: `linear-gradient(160deg, ${cards[1].gradientFrom} 0%, ${cards[1].gradientTo} 100%)`,
+                  ...(cards[1].imagenes?.[0]
+                    ? { backgroundImage: `url(${cards[1].imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : { background: `linear-gradient(160deg, ${cards[1].gradientFrom} 0%, ${cards[1].gradientTo} 100%)` }),
                   transform:       'scale(0.93) translateY(14px)',
                   transformOrigin: 'center top',
                   opacity:         0.58,

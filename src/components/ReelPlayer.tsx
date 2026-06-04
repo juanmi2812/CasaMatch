@@ -66,11 +66,13 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
       <div
         className="absolute inset-0"
         style={{
-          background:          `linear-gradient(160deg, ${property.gradientFrom} 0%, ${property.gradientTo} 100%)`,
-          animation:           isActive ? 'reelBreathe 3.5s ease-in-out infinite' : 'none',
-          transition:          'filter 0.5s ease',
-          filter:              isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
-          willChange:          'filter',
+          ...(property.imagenes?.[0]
+            ? { backgroundImage: `url(${property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: `linear-gradient(160deg, ${property.gradientFrom} 0%, ${property.gradientTo} 100%)` }),
+          animation:  isActive ? 'reelBreathe 3.5s ease-in-out infinite' : 'none',
+          transition: 'filter 0.5s ease',
+          filter:     isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
+          willChange: 'filter',
         }}
       />
 

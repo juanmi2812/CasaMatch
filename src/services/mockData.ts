@@ -16,6 +16,7 @@ export interface PropiedadMock {
   emoji:           string
   tags:            string[]
   caracteristicas: CaracteristicasLifestyle
+  imagenes?:       string[] // URLs from DB; takes priority over gradients when present
 }
 
 export const MOCK_PROPERTIES: PropiedadMock[] = [
