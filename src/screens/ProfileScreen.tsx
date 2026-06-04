@@ -1,11 +1,86 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import {
+  getMatches, removeMatch, savePreferencias, getCitas,
+  type MatchItem, type PreferenciasForm,
+} from '../services/profileService'
+import type { CitaConDetalles } from '../types/database'
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+type Tab = 'matches' | 'preferencias' | 'citas'
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'matches',      label: 'Mis Matches', icon: '♥'  },
+  { id: 'preferencias', label: 'Preferencias', icon: '⚙' },
+  { id: 'citas',        label: 'Citas',        icon: '📅' },
+]
+
+const CITIES = [
+  { value: 'queretaro',   label: 'Querétaro'   },
+  { value: 'cdmx',        label: 'CDMX'        },
+  { value: 'guadalajara', label: 'Guadalajara' },
+  { value: 'leon',        label: 'León'        },
+]
+
+const TIPOS_PROP = [
+  { value: '',             label: 'Todos los tipos'  },
+  { value: 'casa',         label: 'Casa'             },
+  { value: 'departamento', label: 'Departamento'     },
+  { value: 'terreno',      label: 'Terreno'          },
+  { value: 'local',        label: 'Local comercial'  },
+  { value: 'oficina',      label: 'Oficina'          },
+]
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmtPrice(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+  }
+  return `$${(n / 1_000).toFixed(0)}k`
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-MX', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+const INPUT_STYLE: React.CSSProperties = {
+  borderColor: '#EDE4D7', background: '#FAFAFA', color: '#1A1A1A',
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
-  const { session, signOut } = useAuth()
-  const [nombre, setNombre] = useState<string | null>(null)
+  const { session, signOut, preferencias, refreshPreferencias } = useAuth()
+  const [nombre,     setNombre]     = useState<string | null>(null)
+  const [activeTab,  setActiveTab]  = useState<Tab>('matches')
 
+  // Matches tab state
+  const [matches,        setMatches]        = useState<MatchItem[]>([])
+  const [matchesLoading, setMatchesLoading] = useState(false)
+  const [matchesLoaded,  setMatchesLoaded]  = useState(false)
+
+  // Preferencias tab state
+  const [prefForm, setPrefForm] = useState<PreferenciasForm>({
+    ciudad: '', tipo_propiedad: '', presupuesto_min: null, presupuesto_max: null,
+  })
+  const [prefSaving, setPrefSaving] = useState(false)
+  const [prefSaved,  setPrefSaved]  = useState(false)
+  const [prefError,  setPrefError]  = useState<string | null>(null)
+
+  // Citas tab state
+  const [citas,        setCitas]        = useState<CitaConDetalles[]>([])
+  const [citasLoading, setCitasLoading] = useState(false)
+  const [citasLoaded,  setCitasLoaded]  = useState(false)
+
+  // Fetch display name
   useEffect(() => {
     if (!session?.user) return
     supabase
@@ -13,47 +88,400 @@ export default function ProfileScreen() {
       .select('nombre')
       .eq('id', session.user.id)
       .maybeSingle()
-      .then(({ data }) => { if (data) setNombre((data as { nombre: string }).nombre) })
+      .then(({ data }) => {
+        if (data) setNombre((data as { nombre: string }).nombre)
+      })
   }, [session])
 
-  const displayName = nombre ?? session?.user.email?.split('@')[0] ?? 'Usuario'
+  // Sync form when context preferencias arrive (on load or after save)
+  useEffect(() => {
+    if (preferencias) {
+      setPrefForm({
+        ciudad:          preferencias.ciudad          || '',
+        tipo_propiedad:  preferencias.tipo_propiedad  || '',
+        presupuesto_min: preferencias.presupuesto_min ? Number(preferencias.presupuesto_min) : null,
+        presupuesto_max: preferencias.presupuesto_max ? Number(preferencias.presupuesto_max) : null,
+      })
+    }
+  }, [preferencias])
+
+  // Lazy-load matches when tab first selected
+  useEffect(() => {
+    if (activeTab !== 'matches' || matchesLoaded) return
+    setMatchesLoading(true)
+    getMatches()
+      .then((data) => { setMatches(data); setMatchesLoaded(true) })
+      .catch(console.error)
+      .finally(() => setMatchesLoading(false))
+  }, [activeTab, matchesLoaded])
+
+  // Lazy-load citas when tab first selected
+  useEffect(() => {
+    if (activeTab !== 'citas' || citasLoaded) return
+    setCitasLoading(true)
+    getCitas()
+      .then((data) => { setCitas(data); setCitasLoaded(true) })
+      .catch(console.error)
+      .finally(() => setCitasLoading(false))
+  }, [activeTab, citasLoaded])
+
+  async function handleRemoveMatch(swipeId: string) {
+    await removeMatch(swipeId).catch(console.error)
+    setMatches((prev) => prev.filter((m) => m.swipeId !== swipeId))
+  }
+
+  async function handleSavePreferencias() {
+    if (!session?.user) return
+    setPrefSaving(true)
+    setPrefError(null)
+    try {
+      await savePreferencias(session.user.id, prefForm)
+      await refreshPreferencias()
+      setPrefSaved(true)
+      setTimeout(() => setPrefSaved(false), 2500)
+    } catch (err) {
+      setPrefError(err instanceof Error ? err.message : 'Error al guardar')
+    } finally {
+      setPrefSaving(false)
+    }
+  }
+
+  const displayName   = nombre ?? session?.user.email?.split('@')[0] ?? 'Usuario'
+  const assignedAsesor = citas[0]?.asesor ?? null
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center gap-6 px-8" style={{ background: '#F5EFE6' }}>
-      <div
-        className="w-24 h-24 rounded-full flex items-center justify-center text-[44px]"
-        style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
-      >
-        👤
-      </div>
+    <div className="flex flex-col flex-1 overflow-hidden" style={{ background: '#F5EFE6' }}>
 
-      <div className="text-center">
-        <p className="font-display text-[22px] font-bold mb-1" style={{ color: '#1A1A1A' }}>
-          {displayName}
-        </p>
-        <p className="text-[13px]" style={{ color: '#9B9B9B' }}>
-          {session?.user.email}
-        </p>
-      </div>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 px-5 pt-5 pb-3">
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-[26px] flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+          >
+            👤
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display text-[17px] font-bold truncate" style={{ color: '#1A1A1A' }}>
+              {displayName}
+            </p>
+            <p className="text-[12px] truncate" style={{ color: '#9B9B9B' }}>
+              {session?.user.email}
+            </p>
+          </div>
+          <button
+            onClick={() => signOut()}
+            className="text-[12px] px-3 py-1.5 rounded-full border-none cursor-pointer flex-shrink-0"
+            style={{ background: 'white', color: '#C2714F', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+          >
+            Salir
+          </button>
+        </div>
 
-      <div
-        className="w-full rounded-[20px] p-4 flex items-center gap-3"
-        style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
-      >
-        <span className="text-[22px]">🏠</span>
-        <div>
-          <p className="text-[13px] font-semibold" style={{ color: '#1A1A1A' }}>Plan Gratuito</p>
-          <p className="text-[11px]" style={{ color: '#9B9B9B' }}>Explora propiedades sin límite</p>
+        {/* Tab bar */}
+        <div className="flex gap-1 p-1 rounded-[14px]" style={{ background: '#EDE4D7' }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="flex-1 py-2 rounded-[10px] text-[11px] font-semibold border-none cursor-pointer transition-all leading-tight"
+              style={{
+                background: activeTab === tab.id ? 'white' : 'transparent',
+                color:      activeTab === tab.id ? '#1A1A1A' : '#9B9B9B',
+                boxShadow:  activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+              }}
+            >
+              <span className="block text-[15px] mb-0.5">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <button
-        onClick={() => signOut()}
-        className="w-full py-[14px] rounded-full text-[14px] font-semibold border-none cursor-pointer transition-all active:scale-[.97]"
-        style={{ background: 'white', color: '#C2714F', boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}
-      >
-        Cerrar sesión
-      </button>
+      {/* ── Tab content ────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-8">
+        <AnimatePresence mode="wait">
+
+          {/* ── Mis Matches ───────────────────────────────── */}
+          {activeTab === 'matches' && (
+            <motion.div
+              key="matches"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              {matchesLoading && (
+                <div className="flex justify-center py-14">
+                  <span className="text-[36px] animate-pulse">♥</span>
+                </div>
+              )}
+
+              {!matchesLoading && matches.length === 0 && (
+                <div className="flex flex-col items-center py-14 gap-3">
+                  <span className="text-[52px]">💔</span>
+                  <p className="text-[14px] font-medium" style={{ color: '#9B9B9B' }}>
+                    Aún no tienes matches guardados
+                  </p>
+                  <p className="text-[12px] text-center" style={{ color: '#B0B0B0' }}>
+                    Desliza ❤️ en las propiedades que te interesen.
+                  </p>
+                </div>
+              )}
+
+              {!matchesLoading && matches.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  {matches.map((m) => (
+                    <div
+                      key={m.swipeId}
+                      className="relative rounded-[16px] overflow-hidden"
+                      style={{ background: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}
+                    >
+                      {/* Property image */}
+                      <div
+                        className="w-full h-[108px] relative"
+                        style={{
+                          ...(m.property.imagenes?.[0]
+                            ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                            : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
+                        }}
+                      >
+                        <button
+                          onClick={() => handleRemoveMatch(m.swipeId)}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer text-white text-[11px]"
+                          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {/* Info */}
+                      <div className="p-2.5">
+                        <p className="text-[12px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                          {m.property.titulo}
+                        </p>
+                        <p className="text-[11px] font-bold" style={{ color: '#C2714F' }}>
+                          {fmtPrice(m.property.precio)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── Mis Preferencias ──────────────────────────── */}
+          {activeTab === 'preferencias' && (
+            <motion.div
+              key="preferencias"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="pt-2 flex flex-col gap-3"
+            >
+              <p className="text-[13px]" style={{ color: '#6B6B6B' }}>
+                Actualiza tu búsqueda y el feed de propiedades se ajustará de inmediato.
+              </p>
+
+              {/* Ciudad */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[12px] font-semibold" style={{ color: '#1A1A1A' }}>Ciudad</span>
+                <select
+                  value={prefForm.ciudad}
+                  onChange={(e) => setPrefForm((f) => ({ ...f, ciudad: e.target.value }))}
+                  className="w-full px-4 py-[13px] rounded-[14px] text-[14px] outline-none border-2"
+                  style={INPUT_STYLE}
+                >
+                  <option value="">Cualquier ciudad</option>
+                  {CITIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tipo de inmueble */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[12px] font-semibold" style={{ color: '#1A1A1A' }}>Tipo de inmueble</span>
+                <select
+                  value={prefForm.tipo_propiedad}
+                  onChange={(e) => setPrefForm((f) => ({ ...f, tipo_propiedad: e.target.value }))}
+                  className="w-full px-4 py-[13px] rounded-[14px] text-[14px] outline-none border-2"
+                  style={INPUT_STYLE}
+                >
+                  {TIPOS_PROP.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Budget */}
+              <div className="flex gap-2">
+                <div className="flex flex-col gap-1 flex-1">
+                  <span className="text-[12px] font-semibold" style={{ color: '#1A1A1A' }}>Precio mínimo</span>
+                  <input
+                    type="number"
+                    placeholder="Sin mínimo"
+                    value={prefForm.presupuesto_min ?? ''}
+                    onChange={(e) => setPrefForm((f) => ({
+                      ...f, presupuesto_min: e.target.value ? Number(e.target.value) : null,
+                    }))}
+                    className="w-full px-3 py-[11px] rounded-[14px] text-[13px] outline-none border-2"
+                    style={INPUT_STYLE}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <span className="text-[12px] font-semibold" style={{ color: '#1A1A1A' }}>Precio máximo</span>
+                  <input
+                    type="number"
+                    placeholder="Sin límite"
+                    value={prefForm.presupuesto_max ?? ''}
+                    onChange={(e) => setPrefForm((f) => ({
+                      ...f, presupuesto_max: e.target.value ? Number(e.target.value) : null,
+                    }))}
+                    className="w-full px-3 py-[11px] rounded-[14px] text-[13px] outline-none border-2"
+                    style={INPUT_STYLE}
+                  />
+                </div>
+              </div>
+
+              {prefError && (
+                <p className="text-[12px] px-1" style={{ color: '#DC2626' }}>{prefError}</p>
+              )}
+
+              <button
+                onClick={handleSavePreferencias}
+                disabled={prefSaving}
+                className="w-full py-[14px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60 mt-1"
+                style={{
+                  background: prefSaved
+                    ? '#4CAF50'
+                    : 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
+                }}
+              >
+                {prefSaving ? 'Guardando...' : prefSaved ? '✓ Preferencias guardadas' : 'Guardar preferencias →'}
+              </button>
+            </motion.div>
+          )}
+
+          {/* ── Citas ─────────────────────────────────────── */}
+          {activeTab === 'citas' && (
+            <motion.div
+              key="citas"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="pt-2 flex flex-col gap-3"
+            >
+              {/* Asesor asignado (from first upcoming cita) */}
+              {assignedAsesor && (
+                <div
+                  className="rounded-[18px] p-4 flex items-center gap-3"
+                  style={{ background: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-[22px] flex-shrink-0"
+                    style={{ background: 'rgba(194,113,79,0.12)' }}
+                  >
+                    👔
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-medium" style={{ color: '#9B9B9B' }}>
+                      Tu asesor asignado
+                    </p>
+                    <p className="text-[14px] font-bold truncate" style={{ color: '#1A1A1A' }}>
+                      {assignedAsesor.nombre}
+                    </p>
+                    {assignedAsesor.telefono && (
+                      <p className="text-[12px]" style={{ color: '#6B6B6B' }}>
+                        {assignedAsesor.telefono}
+                      </p>
+                    )}
+                  </div>
+                  {assignedAsesor.telefono && (
+                    <a
+                      href={`https://wa.me/${assignedAsesor.telefono.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-full text-[12px] font-semibold flex-shrink-0"
+                      style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
+                    >
+                      WhatsApp
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {citasLoading && (
+                <div className="flex justify-center py-10">
+                  <span className="text-[32px] animate-pulse">📅</span>
+                </div>
+              )}
+
+              {!citasLoading && citas.length === 0 && (
+                <div className="flex flex-col items-center py-12 gap-3">
+                  <span className="text-[52px]">📆</span>
+                  <p className="text-[14px] font-medium" style={{ color: '#9B9B9B' }}>
+                    No tienes citas agendadas
+                  </p>
+                  <p className="text-[12px] text-center" style={{ color: '#B0B0B0' }}>
+                    Toca "Agendar visita" en cualquier propiedad para crear una.
+                  </p>
+                </div>
+              )}
+
+              {!citasLoading && citas.map((cita) => (
+                <div
+                  key={cita.id}
+                  className="rounded-[18px] overflow-hidden"
+                  style={{ background: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}
+                >
+                  <div className="flex gap-3 p-3 items-start">
+                    {/* Property thumbnail */}
+                    <div
+                      className="w-[66px] h-[66px] rounded-[12px] flex-shrink-0"
+                      style={{
+                        ...(cita.propiedad.imagenes?.[0]
+                          ? { backgroundImage: `url(${cita.propiedad.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                          : { background: '#EDE4D7' }),
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold truncate" style={{ color: '#1A1A1A' }}>
+                        {cita.propiedad.titulo}
+                      </p>
+                      <p className="text-[11px]" style={{ color: '#9B9B9B' }}>
+                        {cita.propiedad.ubicacion}
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: '#6B6B6B' }}>
+                        📅 {fmtDate(cita.fecha_cita)}
+                      </p>
+                      {cita.asesor && (
+                        <p className="text-[11px] mt-0.5" style={{ color: '#6B6B6B' }}>
+                          👔 {cita.asesor.nombre}
+                        </p>
+                      )}
+                    </div>
+                    {/* Status badge */}
+                    <span
+                      className="text-[10px] font-semibold px-2 py-1 rounded-full flex-shrink-0"
+                      style={{
+                        background: cita.estado === 'confirmada'
+                          ? 'rgba(76,175,80,0.12)' : 'rgba(255,152,0,0.12)',
+                        color: cita.estado === 'confirmada' ? '#2E7D32' : '#E65100',
+                      }}
+                    >
+                      {cita.estado === 'confirmada' ? '✓ Confirmada' : '⏳ Pendiente'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

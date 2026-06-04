@@ -49,6 +49,7 @@ CREATE TABLE preferencias_onboarding (
   presupuesto_min  NUMERIC(14, 2),
   presupuesto_max  NUMERIC(14, 2),
   ciudad           TEXT           NOT NULL,
+  tipo_propiedad   TEXT,
   zonas            TEXT[],
   tags_lifestyle   TEXT[],
   -- Valores válidos de tags: 'mascotas', 'home_office', 'zona_tranquila',
@@ -427,3 +428,66 @@ SELECT
 COMMENT ON VIEW kpis_globales IS
   'Agregados globales de la plataforma. Sólo accesible por usuarios con '
   'app_metadata.rol = admin vía las políticas RLS de admin.';
+
+
+-- =============================================================
+-- 11. TABLA: citas
+-- cliente_id: usuario que agenda
+-- asesor_id:  asesor responsable de la visita
+-- estado:     pendiente → confirmada | cancelada
+-- =============================================================
+
+CREATE TABLE citas (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  cliente_id     UUID        NOT NULL REFERENCES perfiles(id)    ON DELETE CASCADE,
+  asesor_id      UUID        NOT NULL REFERENCES perfiles(id)    ON DELETE CASCADE,
+  propiedad_id   UUID        NOT NULL REFERENCES propiedades(id) ON DELETE CASCADE,
+  fecha_cita     TIMESTAMPTZ NOT NULL,
+  estado         TEXT        NOT NULL DEFAULT 'pendiente'
+    CHECK (estado IN ('pendiente', 'confirmada', 'cancelada')),
+  creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_citas_cliente   ON citas(cliente_id);
+CREATE INDEX idx_citas_asesor    ON citas(asesor_id);
+CREATE INDEX idx_citas_propiedad ON citas(propiedad_id);
+CREATE INDEX idx_citas_fecha     ON citas(fecha_cita);
+
+CREATE TRIGGER trg_citas_ts
+  BEFORE UPDATE ON citas
+  FOR EACH ROW EXECUTE FUNCTION fn_actualizar_timestamp();
+
+ALTER TABLE citas ENABLE ROW LEVEL SECURITY;
+
+-- Cliente ve sus propias citas
+CREATE POLICY "citas: cliente lee las suyas"
+  ON citas FOR SELECT TO authenticated
+  USING (cliente_id = auth.uid());
+
+-- Asesor ve citas en sus propiedades
+CREATE POLICY "citas: asesor lee las suyas"
+  ON citas FOR SELECT TO authenticated
+  USING (asesor_id = auth.uid());
+
+-- Cliente crea la cita a su nombre
+CREATE POLICY "citas: cliente inserta"
+  ON citas FOR INSERT TO authenticated
+  WITH CHECK (cliente_id = auth.uid());
+
+-- Asesor confirma / cancela
+CREATE POLICY "citas: asesor actualiza estado"
+  ON citas FOR UPDATE TO authenticated
+  USING    (asesor_id = auth.uid())
+  WITH CHECK (asesor_id = auth.uid());
+
+-- Cliente puede cancelar su propia cita
+CREATE POLICY "citas: cliente cancela"
+  ON citas FOR UPDATE TO authenticated
+  USING    (cliente_id = auth.uid())
+  WITH CHECK (cliente_id = auth.uid());
+
+-- Admin lee todo
+CREATE POLICY "admin: leer todas las citas"
+  ON citas FOR SELECT TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');

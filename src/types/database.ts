@@ -59,11 +59,36 @@ export interface PreferenciaOnboarding {
   presupuesto_min: number | null
   presupuesto_max: number | null
   ciudad:          string
+  tipo_propiedad:  string | null
   zonas:           string[] | null
   tags_lifestyle:  TagLifestyle[] | null
   recamaras_min:   number | null
   creado_en:       string
   actualizado_en:  string
+}
+
+export type EstadoCita = 'pendiente' | 'confirmada' | 'cancelada'
+
+export interface Cita {
+  id:             string
+  cliente_id:     string
+  asesor_id:      string
+  propiedad_id:   string
+  fecha_cita:     string
+  estado:         EstadoCita
+  creado_en:      string
+  actualizado_en: string
+}
+
+export type CitaInsert =
+  Pick<Cita, 'cliente_id' | 'asesor_id' | 'propiedad_id' | 'fecha_cita'> &
+  Partial<Pick<Cita, 'estado'>>
+
+export type CitaUpdate = Partial<Pick<Cita, 'estado' | 'fecha_cita'>>
+
+export interface CitaConDetalles extends Cita {
+  propiedad: Pick<Propiedad, 'id' | 'titulo' | 'imagenes' | 'ubicacion' | 'precio'>
+  asesor:    Pick<Perfil,    'id' | 'nombre' | 'telefono' | 'avatar_url'>
 }
 
 export interface Propiedad {
@@ -201,6 +226,12 @@ export interface Database {
         Row:    InteraccionSwipe
         Insert: InteraccionSwipeInsert
         Update: InteraccionSwipeUpdate
+        Relationships: []
+      }
+      citas: {
+        Row:    Cita
+        Insert: CitaInsert
+        Update: CitaUpdate
         Relationships: []
       }
     }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabaseClient'
 import PhoneShell, { type Screen } from './components/PhoneShell'
 import AuthModal from './components/ui/AuthModal'
@@ -21,10 +21,21 @@ interface OnboardingResult {
 }
 
 function AppContent() {
+  const { preferencias } = useAuth()
   const [screen,           setScreen]           = useState<Screen>('landing')
   const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
   const [onboardingResult, setOnboardingResult] = useState<OnboardingResult>({ ciudad: null, tipoPropiedad: null })
   const [showAppAuthModal, setShowAppAuthModal] = useState(false)
+
+  // Sync DiscoverScreen filters when user updates saved preferences from ProfileScreen
+  useEffect(() => {
+    if (preferencias) {
+      setOnboardingResult({
+        ciudad:        preferencias.ciudad        || null,
+        tipoPropiedad: preferencias.tipo_propiedad || null,
+      })
+    }
+  }, [preferencias])
 
   async function navigateByRole() {
     const { data: { session } } = await supabase.auth.getSession()

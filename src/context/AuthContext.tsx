@@ -1,30 +1,51 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
+import type { PreferenciaOnboarding } from '../types/database'
 
 interface AuthContextValue {
-  session:          Session | null
-  loading:          boolean
-  signIn:           (email: string, password: string) => Promise<void>
-  signUp:           (email: string, password: string) => Promise<void>
-  signInWithGoogle: () => Promise<void>
-  signOut:          () => Promise<void>
+  session:             Session | null
+  loading:             boolean
+  preferencias:        PreferenciaOnboarding | null
+  signIn:              (email: string, password: string) => Promise<void>
+  signUp:              (email: string, password: string) => Promise<void>
+  signInWithGoogle:    () => Promise<void>
+  signOut:             () => Promise<void>
+  refreshPreferencias: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [session,      setSession]      = useState<Session | null>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [preferencias, setPreferencias] = useState<PreferenciaOnboarding | null>(null)
+
+  async function fetchPreferencias(userId: string) {
+    const { data } = await supabase
+      .from('preferencias_onboarding')
+      .select('*')
+      .eq('usuario_id', userId)
+      .maybeSingle()
+    setPreferencias(data as PreferenciaOnboarding | null)
+  }
+
+  async function refreshPreferencias() {
+    const { data: { session: s } } = await supabase.auth.getSession()
+    if (s?.user) await fetchPreferencias(s.user.id)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
+      if (data.session?.user) fetchPreferencias(data.session.user.id)
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
+      if (s?.user) fetchPreferencias(s.user.id)
+      else setPreferencias(null)
     })
 
     return () => subscription.unsubscribe()
@@ -55,7 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signUp, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{
+      session, loading, preferencias,
+      signIn, signUp, signInWithGoogle, signOut,
+      refreshPreferencias,
+    }}>
       {children}
     </AuthContext.Provider>
   )
