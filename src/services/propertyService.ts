@@ -60,15 +60,31 @@ export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
 
 // ─── Service functions ────────────────────────────────────────────────────────
 
-export async function getProperties(): Promise<Propiedad[]> {
-  const { data, error } = await supabase
+export interface PropertyFilters {
+  ciudad?: string
+  tipos?:  string[]
+}
+
+export async function getProperties(filters: PropertyFilters = {}): Promise<Propiedad[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('propiedades')
     .select('*')
     .eq('activa', true)
     .order('creado_en', { ascending: false })
 
+  if (filters.ciudad) {
+    q = q.ilike('ciudad', `%${filters.ciudad.toLowerCase()}%`)
+  }
+  if (filters.tipos?.length === 1) {
+    q = q.eq('tipo', filters.tipos[0])
+  } else if (filters.tipos && filters.tipos.length > 1) {
+    q = q.in('tipo', filters.tipos)
+  }
+
+  const { data, error } = await q
   if (error) throw error
-  return data ?? []
+  return (data ?? []) as Propiedad[]
 }
 
 export async function recordSwipe(

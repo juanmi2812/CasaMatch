@@ -11,9 +11,15 @@ import AdminDashboard from './screens/AdminDashboard'
 import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
+interface OnboardingResult {
+  ciudad:        string | null
+  tipoPropiedad: string | null
+}
+
 function App() {
   const [screen,           setScreen]           = useState<Screen>('landing')
   const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
+  const [onboardingResult, setOnboardingResult] = useState<OnboardingResult>({ ciudad: null, tipoPropiedad: null })
 
   function viewDetail(property: PropiedadMock) {
     setSelectedProperty(property)
@@ -30,10 +36,19 @@ function App() {
         />
       )}
       {screen === 'onboarding' && (
-        <OnboardingScreen onComplete={() => setScreen('feed')} />
+        <OnboardingScreen
+          onComplete={(data) => {
+            setOnboardingResult({ ciudad: data.ciudad, tipoPropiedad: data.tipoPropiedad })
+            setScreen('feed')
+          }}
+        />
       )}
       {screen === 'feed' && (
-        <DiscoverScreen onViewDetail={viewDetail} />
+        <DiscoverScreen
+          onViewDetail={viewDetail}
+          ciudadInicial={onboardingResult.ciudad ?? undefined}
+          tipoInicial={onboardingResult.tipoPropiedad ?? undefined}
+        />
       )}
       {screen === 'detail' && selectedProperty && (
         <PropertyDetailScreen

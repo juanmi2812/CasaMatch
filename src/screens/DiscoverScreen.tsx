@@ -225,49 +225,61 @@ DraggableCard.displayName = 'DraggableCard'
 const FILTER_TABS = ['Todos', 'Casas', 'Deptos', 'Comercial'] as const
 type FilterTab = (typeof FILTER_TABS)[number]
 
+const CITY_LABELS: Record<string, string> = {
+  queretaro:   'Querétaro',
+  cdmx:        'CDMX',
+  guadalajara: 'Guadalajara',
+  leon:        'León',
+}
+
+function filterToTipos(tab: FilterTab): string[] | undefined {
+  switch (tab) {
+    case 'Casas':     return ['casa']
+    case 'Deptos':    return ['departamento']
+    case 'Comercial': return ['local', 'oficina']
+    default:          return undefined
+  }
+}
+
+function tipoToFilter(tipo: string | undefined): FilterTab {
+  switch (tipo) {
+    case 'casa':         return 'Casas'
+    case 'departamento': return 'Deptos'
+    case 'local':
+    case 'oficina':      return 'Comercial'
+    default:             return 'Todos'
+  }
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  onViewDetail: (property: PropiedadMock) => void
+  onViewDetail:   (property: PropiedadMock) => void
+  ciudadInicial?: string
+  tipoInicial?:   string
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-export default function DiscoverScreen({ onViewDetail }: Props) {
+export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicial }: Props) {
   const { session } = useAuth()
   const isAuthenticated = !!session
 
-  const [allCards,      setAllCards]     = useState<PropiedadMock[]>([])
   const [cards,         setCards]        = useState<PropiedadMock[]>([])
   const [loading,       setLoading]      = useState(true)
+  const [fetchKey,      setFetchKey]     = useState(0)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'like' | null>(null)
-  const [activeFilter,  setActiveFilter] = useState<FilterTab>('Todos')
-
-  function filterMatches(tipo: PropiedadMock['tipo'], tab: FilterTab): boolean {
-    switch (tab) {
-      case 'Casas':     return tipo === 'casa'
-      case 'Deptos':    return tipo === 'departamento'
-      case 'Comercial': return tipo === 'local' || tipo === 'oficina'
-      default:          return true
-    }
-  }
-
-  useEffect(() => {
-    getProperties()
-      .then((data) => setAllCards(data.map(mapPropiedadToMock)))
-      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setAllCards(MOCK_PROPERTIES) })
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    setCards(
-      activeFilter === 'Todos'
-        ? allCards
-        : allCards.filter((c) => filterMatches(c.tipo, activeFilter)),
-    )
-  }, [activeFilter, allCards])
+  const [activeFilter,  setActiveFilter] = useState<FilterTab>(() => tipoToFilter(tipoInicial))
   const [showToast,     setShowToast]    = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    getProperties({ ciudad: ciudadInicial, tipos: filterToTipos(activeFilter) })
+      .then((data) => setCards(data.map(mapPropiedadToMock)))
+      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
+      .finally(() => setLoading(false))
+  }, [activeFilter, ciudadInicial, fetchKey])
 
   const topCardRef = useRef<DraggableCardHandle>(null)
 
@@ -329,7 +341,9 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
             Casa<span style={{ color: '#E8A98A' }}>Match</span>
           </div>
           <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-[11px]" style={{ color: '#6B6B6B' }}>📍 Querétaro</span>
+            <span className="text-[11px]" style={{ color: '#6B6B6B' }}>
+              📍 {ciudadInicial ? (CITY_LABELS[ciudadInicial] ?? ciudadInicial) : 'México'}
+            </span>
             <span style={{ color: '#C8C8C8', fontSize: 10 }}>·</span>
             <span className="text-[11px] font-medium" style={{ color: '#C2714F' }}>
               {cards.length} {cards.length === 1 ? 'propiedad' : 'propiedades'}
@@ -404,11 +418,8 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
                 </p>
                 <button
                   onClick={() => {
-                    setLoading(true)
-                    getProperties()
-                      .then((data) => setAllCards(data.map(mapPropiedadToMock)))
-                      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setAllCards(MOCK_PROPERTIES) })
-                      .finally(() => setLoading(false))
+                    setActiveFilter('Todos')
+                    setFetchKey((k) => k + 1)
                   }}
                   className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
                   style={{ background: '#C2714F' }}
