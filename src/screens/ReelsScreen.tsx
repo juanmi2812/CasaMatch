@@ -1,15 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
 import ReelPlayer from '../components/ReelPlayer'
-import { MOCK_PROPERTIES } from '../services/mockData'
+import { useAuth } from '../context/AuthContext'
+import { getProperties, mapPropiedadToMock } from '../services/propertyService'
+import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
 
 const CATEGORIES = ['Para ti', 'Casas', 'Deptos', 'Comercial', 'Inversión', 'Lujo'] as const
 
 export default function ReelsScreen() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [showAuthModal,   setShowAuthModal]   = useState(false)
-  const [activeCategory,  setActiveCategory]  = useState<string>('Para ti')
+  const { session }                                    = useAuth()
+  const isAuthenticated                                = !!session
+  const [showAuthModal,  setShowAuthModal]             = useState(false)
+  const [activeCategory, setActiveCategory]            = useState<string>('Para ti')
+  const [properties,     setProperties]                = useState<PropiedadMock[]>([])
+  const [loading,        setLoading]                   = useState(true)
+
+  useEffect(() => {
+    getProperties()
+      .then((data) => setProperties(data.map(mapPropiedadToMock)))
+      .catch((err) => { console.error('Error detallado de Supabase en Reels:', err); setProperties(MOCK_PROPERTIES) })
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <div className="flex-1 relative overflow-hidden" style={{ background: '#000' }}>
@@ -68,34 +80,43 @@ export default function ReelsScreen() {
       </div>
 
       {/* ── Snap scroll container ─────────────────────────────── */}
-      <div
-        className="w-full h-full overflow-y-scroll no-scrollbar"
-        style={{
-          scrollSnapType:     'y mandatory',
-          overscrollBehavior: 'contain',
-          display:            'flex',
-          flexDirection:      'column',
-        }}
-      >
-        {MOCK_PROPERTIES.map((property) => (
+      {loading ? (
+        <div className="absolute inset-0 flex items-center justify-center">
           <div
-            key={property.id}
-            style={{ flex: '0 0 100%', scrollSnapAlign: 'start' }}
-          >
-            <ReelPlayer
-              property={property}
-              isAuthenticated={isAuthenticated}
-              onAuthRequired={() => setShowAuthModal(true)}
-            />
-          </div>
-        ))}
-      </div>
+            className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: 'white' }}
+          />
+        </div>
+      ) : (
+        <div
+          className="w-full h-full overflow-y-scroll no-scrollbar"
+          style={{
+            scrollSnapType:     'y mandatory',
+            overscrollBehavior: 'contain',
+            display:            'flex',
+            flexDirection:      'column',
+          }}
+        >
+          {properties.map((property) => (
+            <div
+              key={property.id}
+              style={{ flex: '0 0 100%', scrollSnapAlign: 'start' }}
+            >
+              <ReelPlayer
+                property={property}
+                isAuthenticated={isAuthenticated}
+                onAuthRequired={() => setShowAuthModal(true)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Lazy Auth modal ───────────────────────────────────── */}
       <AnimatePresence>
         {showAuthModal && (
           <AuthModal
-            onRegister={() => { setIsAuthenticated(true); setShowAuthModal(false) }}
+            onRegister={() => setShowAuthModal(false)}
             onDismiss={() => setShowAuthModal(false)}
           />
         )}

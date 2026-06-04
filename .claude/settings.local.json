@@ -5,7 +5,11 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(npx tsc *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(git push *)",
+      "Bash(vercel --version)",
+      "Bash(npx vercel *)",
+      "Bash(vercel deploy *)"
     ]
   }
 }

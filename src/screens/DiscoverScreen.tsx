@@ -1,4 +1,4 @@
-import { useState, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
   motion,
   useMotionValue,
@@ -10,7 +10,7 @@ import type { PanInfo } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
 import Toast from '../components/ui/Toast'
 import { useAuth } from '../context/AuthContext'
-import { recordSwipe } from '../services/propertyService'
+import { getProperties, mapPropiedadToMock, recordSwipe } from '../services/propertyService'
 import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
 
 const SWIPE_THRESHOLD = 100
@@ -237,8 +237,16 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   const { session } = useAuth()
   const isAuthenticated = !!session
 
-  const [cards,         setCards]        = useState<PropiedadMock[]>(MOCK_PROPERTIES)
+  const [cards,         setCards]        = useState<PropiedadMock[]>([])
+  const [loading,       setLoading]      = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+
+  useEffect(() => {
+    getProperties()
+      .then((data) => setCards(data.map(mapPropiedadToMock)))
+      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
+      .finally(() => setLoading(false))
+  }, [])
   const [pendingAction, setPendingAction] = useState<'like' | null>(null)
   const [activeFilter,  setActiveFilter] = useState<FilterTab>('Todos')
   const [showToast,     setShowToast]    = useState(false)
@@ -350,7 +358,15 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
 
       {/* Card stack */}
       <div className="relative flex-1 mx-4 mb-3 min-h-0 overflow-hidden">
-        {cards.length === 0 ? (
+        {loading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div
+              className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin"
+              style={{ borderColor: '#E8D5C8', borderTopColor: '#C2714F' }}
+            />
+            <p className="text-[13px] font-medium" style={{ color: '#9B9B9B' }}>Cargando propiedades…</p>
+          </div>
+        ) : cards.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8">
             <span className="text-[72px]">🏡</span>
             <p className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
@@ -360,7 +376,13 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
               Has revisado todas las propiedades disponibles.
             </p>
             <button
-              onClick={() => setCards(MOCK_PROPERTIES)}
+              onClick={() => {
+                setLoading(true)
+                getProperties()
+                  .then((data) => setCards(data.map(mapPropiedadToMock)))
+                  .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
+                  .finally(() => setLoading(false))
+              }}
               className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
               style={{ background: '#C2714F' }}
             >
