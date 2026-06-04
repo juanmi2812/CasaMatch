@@ -84,7 +84,7 @@ INSERT INTO public.propiedades (
   caracteristicas_lifestyle, url_video, imagenes, activa, destacada
 ) VALUES
   (
-    'p0000000-0000-0000-0000-000000000001',
+    'e0000000-0000-0000-0000-000000000001',
     'a0000000-0000-0000-0000-000000000001',
     'Casa Residencial en Juriquilla',
     'Amplia residencia en privada con jardín, alberca y acabados de lujo. Ideal para familia.',
@@ -99,7 +99,7 @@ INSERT INTO public.propiedades (
     TRUE, TRUE
   ),
   (
-    'p0000000-0000-0000-0000-000000000002',
+    'e0000000-0000-0000-0000-000000000002',
     'a0000000-0000-0000-0000-000000000001',
     'Loft Moderno en Polanco',
     'Loft minimalista con terraza privada y vista panorámica. Edificio con amenidades premium.',
@@ -114,7 +114,7 @@ INSERT INTO public.propiedades (
     TRUE, TRUE
   ),
   (
-    'p0000000-0000-0000-0000-000000000003',
+    'e0000000-0000-0000-0000-000000000003',
     'a0000000-0000-0000-0000-000000000001',
     'Casa El Campanario',
     'Casa en fraccionamiento exclusivo con acceso controlado, áreas verdes y club de golf.',
@@ -129,7 +129,7 @@ INSERT INTO public.propiedades (
     TRUE, FALSE
   ),
   (
-    'p0000000-0000-0000-0000-000000000004',
+    'e0000000-0000-0000-0000-000000000004',
     'a0000000-0000-0000-0000-000000000001',
     'Penthouse Chapultepec',
     'Penthouse de ultra-lujo con rooftop privado y jacuzzi. Vistas inigualables al bosque.',
@@ -144,7 +144,7 @@ INSERT INTO public.propiedades (
     TRUE, TRUE
   ),
   (
-    'p0000000-0000-0000-0000-000000000005',
+    'e0000000-0000-0000-0000-000000000005',
     'a0000000-0000-0000-0000-000000000001',
     'Townhouse Santa Fe',
     'Townhouse de tres niveles en complejo cerrado. Perfecto para familias modernas.',
@@ -166,7 +166,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =============================================================
 
 INSERT INTO public.interacciones_swipes (usuario_id, propiedad_id, tipo_interaccion) VALUES
-  ('b0000000-0000-0000-0000-000000000001', 'p0000000-0000-0000-0000-000000000001', 'like'),
-  ('b0000000-0000-0000-0000-000000000001', 'p0000000-0000-0000-0000-000000000002', 'save'),
-  ('b0000000-0000-0000-0000-000000000001', 'p0000000-0000-0000-0000-000000000003', 'nope')
+  ('b0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', 'like'),
+  ('b0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', 'save'),
+  ('b0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000003', 'nope')
 ON CONFLICT (usuario_id, propiedad_id) DO NOTHING;
