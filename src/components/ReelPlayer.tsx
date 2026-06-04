@@ -27,7 +27,7 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   const [isLiked,     setIsLiked]       = useState(false)
   const [isSaved,     setIsSaved]       = useState(false)
   const [showToast,   setShowToast]     = useState(false)
-  const [videoSrc,    setVideoSrc]      = useState<string | null>(property.urlVideo ?? null)
+  const [videoSrc,    setVideoSrc]      = useState<string | null>(property.urlVideo || null)
 
   const showIcon = useCallback((type: 'play' | 'pause') => {
     setOverlayIcon(type)
@@ -44,12 +44,13 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
         const e = entries[0]
         const visible = e.isIntersecting && e.intersectionRatio >= 0.8
         const v = videoRef.current
-        if (!v) return
         if (visible) {
-          v.play().catch((err) => console.error('Autoplay bloqueado:', err))
-          setIsPlaying(true)
+          if (v && v.src) {
+            v.play().catch((err) => console.error('Autoplay bloqueado:', err))
+            setIsPlaying(true)
+          }
         } else {
-          v.pause()
+          if (v) v.pause()
           setIsPlaying(false)
         }
       },
