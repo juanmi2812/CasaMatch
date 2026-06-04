@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
+import { supabase } from './lib/supabaseClient'
 import PhoneShell, { type Screen } from './components/PhoneShell'
+import AuthModal from './components/ui/AuthModal'
 import LandingScreen from './screens/LandingScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import DiscoverScreen from './screens/DiscoverScreen'
@@ -8,6 +11,7 @@ import PropertyDetailScreen from './screens/PropertyDetailScreen'
 import ReelsScreen from './screens/ReelsScreen'
 import AdvisorDashboard from './screens/AdvisorDashboard'
 import AdminDashboard from './screens/AdminDashboard'
+import ProfileScreen from './screens/ProfileScreen'
 import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
@@ -16,10 +20,39 @@ interface OnboardingResult {
   tipoPropiedad: string | null
 }
 
-function App() {
+function AppContent() {
   const [screen,           setScreen]           = useState<Screen>('landing')
   const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
   const [onboardingResult, setOnboardingResult] = useState<OnboardingResult>({ ciudad: null, tipoPropiedad: null })
+  const [showAppAuthModal, setShowAppAuthModal] = useState(false)
+
+  async function navigateByRole() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+    const { data: profile } = await supabase
+      .from('perfiles')
+      .select('rol')
+      .eq('id', session.user.id)
+      .maybeSingle()
+    const rol = (profile as { rol?: string } | null)?.rol ?? 'usuario'
+    if (rol === 'admin')   setScreen('admin')
+    else if (rol === 'asesor') setScreen('advisor')
+    else setScreen('profile')
+  }
+
+  function handleNavigate(target: Screen) {
+    if (target === 'advisor') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          setShowAppAuthModal(true)
+        } else {
+          navigateByRole()
+        }
+      })
+      return
+    }
+    setScreen(target)
+  }
 
   function viewDetail(property: PropiedadMock) {
     setSelectedProperty(property)
@@ -27,8 +60,7 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-    <PhoneShell screen={screen} onNavigate={setScreen}>
+    <PhoneShell screen={screen} onNavigate={handleNavigate}>
       {screen === 'landing' && (
         <LandingScreen
           onStart={() => setScreen('onboarding')}
@@ -56,17 +88,36 @@ function App() {
           onBack={() => setScreen('feed')}
         />
       )}
-      {screen === 'reels' && <ReelsScreen />}
+      {screen === 'reels'   && <ReelsScreen />}
       {screen === 'advisor' && <AdvisorDashboard />}
       {screen === 'admin'   && <AdminDashboard />}
+      {screen === 'profile' && <ProfileScreen />}
       {screen === 'saved' && (
         <div className="flex-1 flex items-center justify-center font-body text-[#6B6B6B]">
-          <p>Pantalla «{screen}» — próximamente</p>
+          <p>Guardados — próximamente</p>
         </div>
       )}
+
+      {/* App-level auth modal — triggered by "Asesor" nav tap when unauthenticated */}
+      <AnimatePresence>
+        {showAppAuthModal && (
+          <AuthModal
+            onRegister={async () => {
+              setShowAppAuthModal(false)
+              await navigateByRole()
+            }}
+            onDismiss={() => setShowAppAuthModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </PhoneShell>
-    </AuthProvider>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}

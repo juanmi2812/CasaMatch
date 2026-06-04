@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'admin' | 'detail'
+export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'admin' | 'detail' | 'profile'
 
 interface Props {
   screen: Screen
@@ -16,7 +16,7 @@ const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string }> = [
   { id: 'advisor', icon: '👤', label: 'Asesor'    },
 ]
 
-const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin']
+const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin', 'profile']
 
 export default function PhoneShell({ screen, onNavigate, children }: Props) {
   const showNav = POST_ONBOARDING.includes(screen)
@@ -71,7 +71,9 @@ export default function PhoneShell({ screen, onNavigate, children }: Props) {
             style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}
           >
             {NAV_ITEMS.map(({ id, icon, label }) => {
-              const active = screen === id
+              const active = id === 'advisor'
+                ? screen === 'advisor' || screen === 'admin' || screen === 'profile'
+                : screen === id
               return (
                 <button
                   key={id}

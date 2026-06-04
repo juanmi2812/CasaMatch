@@ -51,6 +51,10 @@ const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
     const likeAlpha = useTransform(x, [40, 130], [0, 1])
     const nopeAlpha = useTransform(x, [-130, -40], [1, 0])
 
+    const images    = card.imagenes && card.imagenes.length > 0 ? card.imagenes : []
+    const multiImg  = images.length > 1
+    const [imgIdx, setImgIdx] = useState(0)
+
     useImperativeHandle(ref, () => ({
       swipeLeft: () => {
         animate(x, -EXIT_X, {
@@ -105,12 +109,47 @@ const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
         <div
           className="absolute inset-0 rounded-[28px] overflow-hidden"
           style={{
-            ...(card.imagenes?.[0]
-              ? { backgroundImage: `url(${card.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            ...(images[imgIdx]
+              ? { backgroundImage: `url(${images[imgIdx]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
               : { background: `linear-gradient(160deg, ${card.gradientFrom} 0%, ${card.gradientTo} 100%)` }),
             boxShadow: '0 20px 60px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.10)',
           }}
         >
+          {/* Image carousel indicators */}
+          {multiImg && (
+            <>
+              <div className="absolute top-3 left-3 right-3 z-20 flex gap-[3px] pointer-events-none">
+                {images.map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-[3px] rounded-full flex-1 transition-all duration-200"
+                    style={{ background: i === imgIdx ? 'white' : 'rgba(255,255,255,0.35)' }}
+                  />
+                ))}
+              </div>
+              {imgIdx > 0 && (
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
+                  style={{ background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(4px)' }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setImgIdx((i) => i - 1) }}
+                >
+                  <span className="text-white text-[20px] leading-none">‹</span>
+                </button>
+              )}
+              {imgIdx < images.length - 1 && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
+                  style={{ background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(4px)' }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setImgIdx((i) => i + 1) }}
+                >
+                  <span className="text-white text-[20px] leading-none">›</span>
+                </button>
+              )}
+            </>
+          )}
+
           {/* Emoji watermark */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span

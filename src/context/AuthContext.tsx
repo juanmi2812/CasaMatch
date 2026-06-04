@@ -3,11 +3,12 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
 interface AuthContextValue {
-  session:         Session | null
-  loading:         boolean
-  signIn:          (email: string, password: string) => Promise<void>
+  session:          Session | null
+  loading:          boolean
+  signIn:           (email: string, password: string) => Promise<void>
+  signUp:           (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
-  signOut:         () => Promise<void>
+  signOut:          () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -34,6 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
   }
 
+  async function signUp(email: string, password: string) {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) throw error
+    if (data.user && !data.session) throw new Error('CONFIRM_EMAIL')
+  }
+
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -48,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signIn, signUp, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )

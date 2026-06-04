@@ -76,20 +76,21 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
       {/* ── Video background (when URL available) ───────────────── */}
       {videoSrc && (
         <video
+          key={videoSrc}
           ref={videoRef}
-          muted
-          playsInline
+          src={videoSrc}
           autoPlay
           loop
+          muted
+          playsInline
+          preload="metadata"
           className="absolute inset-0 w-full h-full object-cover"
           onError={() => setVideoSrc(videoSrc === FALLBACK_VIDEO ? null : FALLBACK_VIDEO)}
           style={{
             filter:     isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
             transition: 'filter 0.5s ease',
           }}
-        >
-          <source src={videoSrc} type="video/mp4" />
-        </video>
+        />
       )}
 
       {/* ── Static background (when no video) ───────────────────── */}
