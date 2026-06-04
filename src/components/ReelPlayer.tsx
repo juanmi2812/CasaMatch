@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { PropiedadMock } from '../services/mockData'
 import Toast from './ui/Toast'
 
-const FALLBACK_VIDEO = 'https://assets.mixkit.co/videos/preview/mixkit-luxury-resort-with-swimming-pool-41617-large.mp4'
 
 interface Props {
   property:        PropiedadMock
@@ -19,6 +18,8 @@ function fmtPrice(n: number): string {
   return `$${(n / 1_000).toFixed(0)}k`
 }
 
+const hasVideo = (p: PropiedadMock) => Boolean(p.urlVideo)
+
 export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }: Props) {
   const playerRef                       = useRef<HTMLDivElement>(null)
   const videoRef                        = useRef<HTMLVideoElement>(null)
@@ -27,7 +28,8 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   const [isLiked,     setIsLiked]       = useState(false)
   const [isSaved,     setIsSaved]       = useState(false)
   const [showToast,   setShowToast]     = useState(false)
-  const [videoSrc,    setVideoSrc]      = useState<string | null>(property.urlVideo || null)
+
+  const videoUrl = property.urlVideo || ''
 
   const showIcon = useCallback((type: 'play' | 'pause') => {
     setOverlayIcon(type)
@@ -45,7 +47,7 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
         const visible = e.isIntersecting && e.intersectionRatio >= 0.8
         const v = videoRef.current
         if (visible) {
-          if (v && v.src) {
+          if (v && hasVideo(property)) {
             v.play().catch((err) => console.error('Autoplay bloqueado:', err))
             setIsPlaying(true)
           }
@@ -58,11 +60,11 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [property])
 
   function handleContainerClick() {
     const v = videoRef.current
-    if (!v || !videoSrc) return
+    if (!v || !hasVideo(property)) return
     if (v.paused) {
       v.play().catch((err) => console.error('Autoplay bloqueado:', err))
       setIsPlaying(true)
@@ -96,30 +98,30 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   return (
     <div ref={playerRef} className="relative w-full h-full overflow-hidden">
 
-      {/* ── Video background ─────────────────────────────────────── */}
-      {videoSrc && (
+      {/* ── Video background (only when URL exists) ─────────────── */}
+      {hasVideo(property) ? (
         <video
-          key={videoSrc}
+          key={videoUrl}
           ref={videoRef}
-          src={videoSrc}
+          src={videoUrl}
+          poster={property.imagenes?.[0] || ''}
+          crossOrigin="anonymous"
           autoPlay
           loop
           muted
           playsInline
           preload="metadata"
           className="absolute inset-0 w-full h-full object-cover"
-          onError={() => setVideoSrc(videoSrc === FALLBACK_VIDEO ? null : FALLBACK_VIDEO)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
+          onError={(e) => console.error('Error nativo del video:', e.currentTarget.error)}
           style={{
             filter:     isPlaying ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
             transition: 'filter 0.5s ease',
           }}
         />
-      )}
-
-      {/* ── Static background ────────────────────────────────────── */}
-      {!videoSrc && (
+      ) : (
+        /* ── Static background (no video) ──────────────────────── */
         <div
           className="absolute inset-0"
           style={{
