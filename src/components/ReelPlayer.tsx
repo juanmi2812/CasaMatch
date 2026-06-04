@@ -105,7 +105,6 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
           ref={videoRef}
           src={videoUrl}
           poster={property.imagenes?.[0] || ''}
-          crossOrigin="anonymous"
           autoPlay
           loop
           muted
