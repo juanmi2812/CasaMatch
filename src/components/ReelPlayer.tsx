@@ -3,6 +3,8 @@ import { AnimatePresence } from 'framer-motion'
 import type { PropiedadMock } from '../services/mockData'
 import Toast from './ui/Toast'
 
+const FALLBACK_VIDEO = 'https://assets.mixkit.co/videos/preview/mixkit-luxury-resort-with-swimming-pool-41617-large.mp4'
+
 interface Props {
   property:        PropiedadMock
   isAuthenticated: boolean
@@ -19,16 +21,17 @@ function fmtPrice(n: number): string {
 
 export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }: Props) {
   const playerRef              = useRef<HTMLDivElement>(null)
+  const videoRef               = useRef<HTMLVideoElement>(null)
   const [isActive,   setIsActive]   = useState(false)
   const [isLiked,    setIsLiked]    = useState(false)
   const [isSaved,    setIsSaved]    = useState(false)
   const [showToast,  setShowToast]  = useState(false)
+  const [videoSrc,   setVideoSrc]   = useState<string | null>(property.urlVideo ?? null)
 
-  // IntersectionObserver: play only when ≥ 80 % visible
+  // IntersectionObserver: activate when ≥ 80 % visible
   useEffect(() => {
     const el = playerRef.current
     if (!el) return
-
     const observer = new IntersectionObserver(
       (entries) => {
         const e = entries[0]
@@ -39,6 +42,14 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  // Play / pause video based on active state
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (isActive) v.play().catch(() => {})
+    else v.pause()
+  }, [isActive])
 
   function handleLike() {
     if (!isAuthenticated) { onAuthRequired(); return }
@@ -62,19 +73,40 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   return (
     <div ref={playerRef} className="relative w-full h-full overflow-hidden">
 
-      {/* ── "Video" background ──────────────────────────────────── */}
-      <div
-        className="absolute inset-0"
-        style={{
-          ...(property.imagenes?.[0]
-            ? { backgroundImage: `url(${property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-            : { background: `linear-gradient(160deg, ${property.gradientFrom} 0%, ${property.gradientTo} 100%)` }),
-          animation:  isActive ? 'reelBreathe 3.5s ease-in-out infinite' : 'none',
-          transition: 'filter 0.5s ease',
-          filter:     isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
-          willChange: 'filter',
-        }}
-      />
+      {/* ── Video background (when URL available) ───────────────── */}
+      {videoSrc && (
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          autoPlay
+          loop
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setVideoSrc(videoSrc === FALLBACK_VIDEO ? null : FALLBACK_VIDEO)}
+          style={{
+            filter:     isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
+            transition: 'filter 0.5s ease',
+          }}
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+      )}
+
+      {/* ── Static background (when no video) ───────────────────── */}
+      {!videoSrc && (
+        <div
+          className="absolute inset-0"
+          style={{
+            ...(property.imagenes?.[0]
+              ? { backgroundImage: `url(${property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: `linear-gradient(160deg, ${property.gradientFrom} 0%, ${property.gradientTo} 100%)` }),
+            animation:  isActive ? 'reelBreathe 3.5s ease-in-out infinite' : 'none',
+            transition: 'filter 0.5s ease',
+            filter:     isActive ? 'brightness(1)' : 'brightness(0.55) saturate(0.60)',
+            willChange: 'filter',
+          }}
+        />
+      )}
 
       {/* Emoji watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -201,6 +233,7 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
           📅 Agendar visita
         </button>
       </div>
+
       {/* Toast */}
       <AnimatePresence>
         {showToast && (

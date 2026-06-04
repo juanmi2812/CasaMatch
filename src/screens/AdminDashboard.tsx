@@ -47,14 +47,6 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
 
-      {/* Status bar */}
-      <div className="flex justify-between items-center px-5 pt-[14px] pb-[6px] text-[12px] font-semibold flex-shrink-0">
-        <span>9:41</span>
-        <div className="flex gap-1 items-center">
-          <span>●●●</span><span>📶</span><span>🔋</span>
-        </div>
-      </div>
-
       {/* Header */}
       <div className="px-5 pt-1 pb-5">
         <div className="flex items-center gap-2 mb-0.5">

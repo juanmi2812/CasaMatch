@@ -13,15 +13,35 @@ export default function ReelsScreen() {
   const isAuthenticated                                = !!session
   const [showAuthModal,  setShowAuthModal]             = useState(false)
   const [activeCategory, setActiveCategory]            = useState<string>('Para ti')
+  const [allProperties,  setAllProperties]             = useState<PropiedadMock[]>([])
   const [properties,     setProperties]                = useState<PropiedadMock[]>([])
   const [loading,        setLoading]                   = useState(true)
 
+  function reelFilterMatches(p: PropiedadMock, cat: string): boolean {
+    switch (cat) {
+      case 'Casas':     return p.tipo === 'casa'
+      case 'Deptos':    return p.tipo === 'departamento'
+      case 'Comercial': return p.tipo === 'local' || p.tipo === 'oficina'
+      case 'Inversión': return p.tipo === 'terreno'
+      case 'Lujo':      return p.precio >= 5_000_000
+      default:          return true
+    }
+  }
+
   useEffect(() => {
     getProperties()
-      .then((data) => setProperties(data.map(mapPropiedadToMock)))
-      .catch((err) => { console.error('Error detallado de Supabase en Reels:', err); setProperties(MOCK_PROPERTIES) })
+      .then((data) => setAllProperties(data.map(mapPropiedadToMock)))
+      .catch((err) => { console.error('Error detallado de Supabase en Reels:', err); setAllProperties(MOCK_PROPERTIES) })
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    setProperties(
+      activeCategory === 'Para ti'
+        ? allProperties
+        : allProperties.filter((p) => reelFilterMatches(p, activeCategory)),
+    )
+  }, [activeCategory, allProperties])
 
   return (
     <div className="flex-1 relative overflow-hidden" style={{ background: '#000' }}>
@@ -34,16 +54,6 @@ export default function ReelsScreen() {
           paddingBottom: 20,
         }}
       >
-        {/* Status bar */}
-        <div className="flex justify-between items-center px-5 pt-[14px] pb-2">
-          <span className="text-white text-[12px] font-semibold">9:41</span>
-          <div className="flex gap-1 items-center">
-            <span className="text-white text-[12px] font-semibold">●●●</span>
-            <span className="text-white text-[11px]">📶</span>
-            <span className="text-white text-[11px]">🔋</span>
-          </div>
-        </div>
-
         {/* Logo + search */}
         <div className="flex items-center justify-between px-5 pb-2">
           <p className="font-display text-white text-[19px] font-bold leading-none">

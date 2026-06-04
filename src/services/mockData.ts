@@ -17,6 +17,7 @@ export interface PropiedadMock {
   tags:            string[]
   caracteristicas: CaracteristicasLifestyle
   imagenes?:       string[] // URLs from DB; takes priority over gradients when present
+  urlVideo?:       string   // mp4 URL for reel playback
 }
 
 export const MOCK_PROPERTIES: PropiedadMock[] = [

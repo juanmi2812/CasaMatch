@@ -54,6 +54,7 @@ export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
     tags,
     caracteristicas: c,
     imagenes:     p.imagenes,
+    urlVideo:     p.url_video ?? undefined,
   }
 }
 

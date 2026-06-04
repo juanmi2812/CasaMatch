@@ -237,18 +237,36 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   const { session } = useAuth()
   const isAuthenticated = !!session
 
+  const [allCards,      setAllCards]     = useState<PropiedadMock[]>([])
   const [cards,         setCards]        = useState<PropiedadMock[]>([])
   const [loading,       setLoading]      = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'like' | null>(null)
+  const [activeFilter,  setActiveFilter] = useState<FilterTab>('Todos')
+
+  function filterMatches(tipo: PropiedadMock['tipo'], tab: FilterTab): boolean {
+    switch (tab) {
+      case 'Casas':     return tipo === 'casa'
+      case 'Deptos':    return tipo === 'departamento'
+      case 'Comercial': return tipo === 'local' || tipo === 'oficina'
+      default:          return true
+    }
+  }
 
   useEffect(() => {
     getProperties()
-      .then((data) => setCards(data.map(mapPropiedadToMock)))
-      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
+      .then((data) => setAllCards(data.map(mapPropiedadToMock)))
+      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setAllCards(MOCK_PROPERTIES) })
       .finally(() => setLoading(false))
   }, [])
-  const [pendingAction, setPendingAction] = useState<'like' | null>(null)
-  const [activeFilter,  setActiveFilter] = useState<FilterTab>('Todos')
+
+  useEffect(() => {
+    setCards(
+      activeFilter === 'Todos'
+        ? allCards
+        : allCards.filter((c) => filterMatches(c.tipo, activeFilter)),
+    )
+  }, [activeFilter, allCards])
   const [showToast,     setShowToast]    = useState(false)
 
   const topCardRef = useRef<DraggableCardHandle>(null)
@@ -304,16 +322,6 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
   return (
     <div className="flex flex-col flex-1 overflow-hidden" style={{ background: '#F5EFE6' }}>
 
-      {/* Status bar */}
-      <div className="flex justify-between items-center px-5 pt-[14px] pb-[6px] text-[12px] font-semibold flex-shrink-0">
-        <span>9:41</span>
-        <div className="flex gap-1 items-center">
-          <span>●●●</span>
-          <span>📶</span>
-          <span>🔋</span>
-        </div>
-      </div>
-
       {/* Header */}
       <div className="px-5 pt-1 pb-2 flex items-center justify-between flex-shrink-0">
         <div>
@@ -368,26 +376,47 @@ export default function DiscoverScreen({ onViewDetail }: Props) {
           </div>
         ) : cards.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8">
-            <span className="text-[72px]">🏡</span>
-            <p className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
-              ¡Eso es todo!
-            </p>
-            <p className="text-[14px] leading-[1.6]" style={{ color: '#6B6B6B' }}>
-              Has revisado todas las propiedades disponibles.
-            </p>
-            <button
-              onClick={() => {
-                setLoading(true)
-                getProperties()
-                  .then((data) => setCards(data.map(mapPropiedadToMock)))
-                  .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
-                  .finally(() => setLoading(false))
-              }}
-              className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
-              style={{ background: '#C2714F' }}
-            >
-              Ver de nuevo
-            </button>
+            {activeFilter !== 'Todos' ? (
+              <>
+                <span className="text-[72px]">🔍</span>
+                <p className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
+                  Sin resultados
+                </p>
+                <p className="text-[14px] leading-[1.6]" style={{ color: '#6B6B6B' }}>
+                  No hay propiedades en esta categoría.
+                </p>
+                <button
+                  onClick={() => setActiveFilter('Todos')}
+                  className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+                  style={{ background: '#C2714F' }}
+                >
+                  Limpiar filtros
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-[72px]">🏡</span>
+                <p className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
+                  ¡Eso es todo!
+                </p>
+                <p className="text-[14px] leading-[1.6]" style={{ color: '#6B6B6B' }}>
+                  Has revisado todas las propiedades disponibles.
+                </p>
+                <button
+                  onClick={() => {
+                    setLoading(true)
+                    getProperties()
+                      .then((data) => setAllCards(data.map(mapPropiedadToMock)))
+                      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setAllCards(MOCK_PROPERTIES) })
+                      .finally(() => setLoading(false))
+                  }}
+                  className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+                  style={{ background: '#C2714F' }}
+                >
+                  Ver de nuevo
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <>

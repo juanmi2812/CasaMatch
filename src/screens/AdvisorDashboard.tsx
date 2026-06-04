@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AIGeneratorModal from '../components/ui/AIGeneratorModal'
+import NewPropertyModal from '../components/ui/NewPropertyModal'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import type { KpisAsesor } from '../types/database'
@@ -42,13 +43,15 @@ const MOCK_ACTIVE_PROPERTIES: ActiveProperty[] = [
 
 export default function AdvisorDashboard() {
   const { session } = useAuth()
-  const [kpis,       setKpis]       = useState<KpisAsesor | null>(null)
-  const [kpisLoading, setKpisLoading] = useState(true)
-  const [showAIModal, setShowAIModal] = useState(false)
+  const [kpis,              setKpis]             = useState<KpisAsesor | null>(null)
+  const [kpisLoading,       setKpisLoading]      = useState(true)
+  const [kpisKey,           setKpisKey]          = useState(0)
+  const [showAIModal,       setShowAIModal]      = useState(false)
+  const [showNewPropModal,  setShowNewPropModal] = useState(false)
 
   useEffect(() => {
     if (!session?.user) { setKpisLoading(false); return }
-
+    setKpisLoading(true)
     supabase
       .from('kpis_asesores')
       .select('*')
@@ -58,7 +61,7 @@ export default function AdvisorDashboard() {
         if (data) setKpis(data as KpisAsesor)
         setKpisLoading(false)
       })
-  }, [session])
+  }, [session, kpisKey])
 
   const metrics = [
     {
@@ -85,14 +88,6 @@ export default function AdvisorDashboard() {
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
-
-      {/* Status bar */}
-      <div className="flex justify-between items-center px-5 pt-[14px] pb-[6px] text-[12px] font-semibold flex-shrink-0">
-        <span>9:41</span>
-        <div className="flex gap-1 items-center">
-          <span>●●●</span><span>📶</span><span>🔋</span>
-        </div>
-      </div>
 
       {/* Header */}
       <div className="px-5 pt-1 pb-4 flex items-center justify-between flex-shrink-0">
@@ -207,7 +202,13 @@ export default function AdvisorDashboard() {
       <div className="px-4 mb-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>Mis propiedades</h2>
-          <button className="text-[12px] font-semibold" style={{ color: '#C2714F' }}>Agregar</button>
+          <button
+            onClick={() => setShowNewPropModal(true)}
+            className="text-[12px] font-semibold border-none cursor-pointer bg-transparent"
+            style={{ color: '#C2714F' }}
+          >
+            + Agregar
+          </button>
         </div>
         <div className="flex flex-col gap-3">
           {MOCK_ACTIVE_PROPERTIES.map((prop) => (
@@ -292,6 +293,15 @@ export default function AdvisorDashboard() {
       <AnimatePresence>
         {showAIModal && (
           <AIGeneratorModal onDismiss={() => setShowAIModal(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNewPropModal && (
+          <NewPropertyModal
+            onDismiss={() => setShowNewPropModal(false)}
+            onCreated={() => { setShowNewPropModal(false); setKpisKey((k) => k + 1) }}
+          />
         )}
       </AnimatePresence>
     </div>
