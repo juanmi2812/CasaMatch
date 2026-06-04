@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 
-type View     = 'options' | 'email'
 type EmailTab = 'login' | 'register'
 
 interface Props {
@@ -11,9 +10,8 @@ interface Props {
 }
 
 export default function AuthModal({ onRegister, onDismiss }: Props) {
-  const { signIn, signUp, signInWithGoogle } = useAuth()
+  const { signIn, signUp } = useAuth()
 
-  const [view,         setView]        = useState<View>('options')
   const [emailTab,     setEmailTab]    = useState<EmailTab>('login')
   const [email,        setEmail]       = useState('')
   const [password,     setPassword]    = useState('')
@@ -21,18 +19,7 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
   const [error,        setError]       = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState(false)
 
-  async function handleGoogle() {
-    setLoading(true)
-    setError(null)
-    try {
-      await signInWithGoogle()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error con Google')
-      setLoading(false)
-    }
-  }
-
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -43,8 +30,8 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
         await signUp(email, password)
       }
       onRegister()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Error al autenticar'
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al autenticar'
       if (msg === 'CONFIRM_EMAIL') {
         setConfirmEmail(true)
       } else {
@@ -53,14 +40,6 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
     } finally {
       setLoading(false)
     }
-  }
-
-  function resetEmail() {
-    setView('options')
-    setError(null)
-    setConfirmEmail(false)
-    setEmail('')
-    setPassword('')
   }
 
   return (
@@ -85,73 +64,12 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
         transition={{ type: 'spring', stiffness: 280, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-[4px] rounded-full mx-auto mb-6" style={{ background: '#EDE4D7' }} />
+        <div className="w-10 h-[4px] rounded-full mx-auto mb-5" style={{ background: '#EDE4D7' }} />
 
         <AnimatePresence mode="wait">
 
-          {/* ── Options view ──────────────────────────────────── */}
-          {view === 'options' && (
-            <motion.div
-              key="options"
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.18 }}
-            >
-              <motion.div
-                className="w-[68px] h-[68px] rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ background: 'rgba(194,113,79,0.10)' }}
-                animate={{ scale: [1, 1.12, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <span className="text-[32px]" style={{ color: '#C2714F' }}>♥</span>
-              </motion.div>
-
-              <h2 className="font-display text-[26px] font-bold text-center mb-2 leading-[1.2]" style={{ color: '#1A1A1A' }}>
-                ¡No pierdas este match!
-              </h2>
-              <p className="text-[14px] text-center mb-7 leading-[1.55]" style={{ color: '#6B6B6B' }}>
-                Accede a tu cuenta o crea una gratis para guardar propiedades.
-              </p>
-
-              <div className="flex flex-col gap-3 mb-5">
-                <button
-                  onClick={handleGoogle}
-                  disabled={loading}
-                  className="w-full flex items-center gap-3 px-5 py-[14px] rounded-[16px] text-[14px] font-semibold cursor-pointer transition-all active:scale-[.97] border-2 disabled:opacity-60"
-                  style={{ borderColor: '#EDE4D7', background: 'white', color: '#1A1A1A' }}
-                >
-                  <span className="w-[24px] h-[24px] rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0" style={{ background: '#4285F4', color: 'white' }}>G</span>
-                  Continuar con Google
-                </button>
-
-                <button
-                  onClick={() => { setEmailTab('login'); setView('email') }}
-                  className="w-full flex items-center gap-3 px-5 py-[14px] rounded-[16px] text-[14px] font-semibold cursor-pointer transition-all active:scale-[.97] border-2"
-                  style={{ borderColor: '#EDE4D7', background: 'white', color: '#1A1A1A' }}
-                >
-                  <span className="text-[18px] flex-shrink-0">✉</span>
-                  Iniciar sesión con Email
-                </button>
-
-                <button
-                  onClick={() => { setEmailTab('register'); setView('email') }}
-                  className="w-full flex items-center gap-3 px-5 py-[14px] rounded-[16px] text-[14px] font-semibold text-white cursor-pointer transition-all active:scale-[.97] border-none"
-                  style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
-                >
-                  <span className="text-[18px] flex-shrink-0">🏠</span>
-                  Crear cuenta gratis
-                </button>
-              </div>
-
-              {error && (
-                <p className="text-[12px] text-center mb-3" style={{ color: '#DC2626' }}>{error}</p>
-              )}
-            </motion.div>
-          )}
-
-          {/* ── Email-sent confirmation ────────────────────────── */}
-          {confirmEmail && (
+          {/* ── Email sent confirmation ──────────────────────── */}
+          {confirmEmail ? (
             <motion.div
               key="confirm"
               initial={{ opacity: 0, scale: 0.96 }}
@@ -160,13 +78,13 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
               transition={{ duration: 0.2 }}
               className="flex flex-col items-center text-center gap-4 py-4"
             >
-              <span className="text-[56px]">📬</span>
+              <span className="text-[52px]">📬</span>
               <h2 className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
                 Revisa tu correo
               </h2>
               <p className="text-[14px] leading-[1.6]" style={{ color: '#6B6B6B' }}>
-                Te enviamos un enlace de confirmación a <strong>{email}</strong>.
-                Confirma tu cuenta y luego inicia sesión.
+                Enviamos un enlace de confirmación a <strong>{email}</strong>.
+                Confirma tu cuenta y vuelve a iniciar sesión.
               </p>
               <button
                 onClick={() => { setConfirmEmail(false); setEmailTab('login') }}
@@ -176,26 +94,36 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
                 Iniciar sesión →
               </button>
             </motion.div>
-          )}
 
-          {/* ── Email form ────────────────────────────────────── */}
-          {view === 'email' && !confirmEmail && (
+          ) : (
+
+            /* ── Login / Register form ───────────────────────── */
             <motion.div
-              key="email"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 16 }}
-              transition={{ duration: 0.18 }}
+              key="form"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
-              <button
-                onClick={resetEmail}
-                className="flex items-center gap-1.5 text-[13px] font-medium mb-4 bg-transparent border-none cursor-pointer p-0"
-                style={{ color: '#9B9B9B' }}
-              >
-                ← Volver
-              </button>
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="w-[44px] h-[44px] rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(194,113,79,0.10)' }}
+                >
+                  <span className="text-[22px]" style={{ color: '#C2714F' }}>♥</span>
+                </div>
+                <div>
+                  <h2 className="font-display text-[20px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
+                    {emailTab === 'login' ? 'Bienvenido de vuelta' : 'Crea tu cuenta'}
+                  </h2>
+                  <p className="text-[12px]" style={{ color: '#9B9B9B' }}>
+                    {emailTab === 'login' ? 'Accede a tus propiedades guardadas' : 'Gratis · Sin tarjeta requerida'}
+                  </p>
+                </div>
+              </div>
 
-              {/* Login / Register tabs */}
+              {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-[14px] mb-5" style={{ background: '#F5EFE6' }}>
                 {(['login', 'register'] as EmailTab[]).map((tab) => (
                   <button
@@ -213,7 +141,8 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
                 ))}
               </div>
 
-              <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3 mb-4">
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-4">
                 <input
                   type="email"
                   placeholder="correo@ejemplo.com"
@@ -235,13 +164,13 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
                 />
 
                 {error && (
-                  <p className="text-[12px]" style={{ color: '#DC2626' }}>{error}</p>
+                  <p className="text-[12px] px-1" style={{ color: '#DC2626' }}>{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-[14px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60"
+                  className="w-full py-[14px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60 mt-1"
                   style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
                 >
                   {loading
@@ -251,13 +180,12 @@ export default function AuthModal({ onRegister, onDismiss }: Props) {
               </form>
             </motion.div>
           )}
-
         </AnimatePresence>
 
         <button
           onClick={onDismiss}
           className="w-full text-center text-[13px] cursor-pointer bg-transparent border-none py-1 transition-all active:opacity-60"
-          style={{ color: '#6B6B6B' }}
+          style={{ color: '#9B9B9B' }}
         >
           Seguir explorando sin cuenta →
         </button>
