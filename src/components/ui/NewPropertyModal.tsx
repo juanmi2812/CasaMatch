@@ -9,6 +9,14 @@ interface Props {
   onCreated: () => void
 }
 
+const TIPOS: { value: TipoPropiedad; label: string }[] = [
+  { value: 'casa',         label: 'Casa'             },
+  { value: 'departamento', label: 'Departamento'     },
+  { value: 'terreno',      label: 'Terreno'          },
+  { value: 'local',        label: 'Local comercial'  },
+  { value: 'oficina',      label: 'Oficina'          },
+]
+
 const DEFAULT_CARACTERISTICAS: CaracteristicasLifestyle = {
   seguridad:          3,
   trafico:            3,
@@ -21,38 +29,103 @@ const DEFAULT_CARACTERISTICAS: CaracteristicasLifestyle = {
   home_office:        false,
 }
 
+const FIELD_STYLE = { background: '#F0EAE1', color: '#1A1A1A' }
+const FIELD_CLASS = 'w-full px-4 py-3 rounded-[14px] text-[14px] border-none outline-none'
+
+// ─── AI description generator ────────────────────────────────────────────────
+
+function buildDescription(tipo: TipoPropiedad, ubicacion: string, precio: string): string {
+  const tipoLabel: Record<TipoPropiedad, string> = {
+    casa:         'casa',
+    departamento: 'departamento',
+    terreno:      'terreno con gran potencial',
+    local:        'local comercial',
+    oficina:      'oficina',
+  }
+  const precioNum = Number(precio)
+  const precioFmt = precioNum >= 1_000_000
+    ? `$${(precioNum / 1_000_000).toFixed(1)} millones MXN`
+    : precioNum > 0
+      ? `$${precioNum.toLocaleString('es-MX')} MXN`
+      : 'precio competitivo'
+  const zona = ubicacion.trim() || 'una zona exclusiva'
+  const usp: Record<TipoPropiedad, string> = {
+    casa:         'hacer de este espacio el hogar de tus sueños',
+    departamento: 'disfrutar de una vida urbana moderna y cómoda',
+    terreno:      'desarrollar un proyecto con alta plusvalía',
+    local:        'impulsar tu negocio en una ubicación estratégica',
+    oficina:      'llevar tu productividad al siguiente nivel',
+  }
+  return `Espectacular ${tipoLabel[tipo]} ubicada en la exclusiva zona de ${zona}, disponible a un valor de ${precioFmt}. Esta propiedad destaca por sus acabados de primer nivel, diseño contemporáneo y una localización privilegiada que combina tranquilidad residencial con acceso inmediato a comercios, escuelas y vías principales. Ideal para quienes buscan ${usp[tipo]}. Una oportunidad única en el mercado — ¡agenda tu visita hoy!`
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
   const { session } = useAuth()
-  const [titulo,    setTitulo]    = useState('')
-  const [tipo,      setTipo]      = useState<TipoPropiedad>('casa')
-  const [precio,    setPrecio]    = useState('')
-  const [ubicacion, setUbicacion] = useState('')
-  const [ciudad,    setCiudad]    = useState('')
-  const [imageUrl,  setImageUrl]  = useState('')
-  const [saving,    setSaving]    = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
+
+  const [titulo,      setTitulo]      = useState('')
+  const [tipo,        setTipo]        = useState<TipoPropiedad>('casa')
+  const [precio,      setPrecio]      = useState('')
+  const [ubicacion,   setUbicacion]   = useState('')
+  const [ciudad,      setCiudad]      = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [imageUrls,   setImageUrls]   = useState('')   // comma-separated
+  const [localFiles,  setLocalFiles]  = useState<File[]>([])
+  const [saving,      setSaving]      = useState(false)
+  const [error,       setError]       = useState<string | null>(null)
+
+  function handleGenerateDescription() {
+    setDescripcion(buildDescription(tipo, ubicacion, precio))
+  }
+
+  async function uploadFiles(userId: string): Promise<string[]> {
+    const publicUrls: string[] = []
+    for (const file of localFiles) {
+      const ext  = file.name.split('.').pop() ?? 'jpg'
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { data, error: upErr } = await supabase.storage
+        .from('propiedades')
+        .upload(path, file, { upsert: false })
+      if (upErr) { console.error('[storage upload]', upErr.message); continue }
+      if (data) {
+        const { data: urlData } = supabase.storage.from('propiedades').getPublicUrl(data.path)
+        publicUrls.push(urlData.publicUrl)
+      }
+    }
+    return publicUrls
+  }
 
   async function handleSave() {
     if (!session?.user) return
     if (!titulo.trim() || !precio || !ubicacion.trim() || !ciudad.trim()) {
-      setError('Completa los campos obligatorios.')
+      setError('Completa los campos obligatorios (*).')
       return
     }
     setSaving(true)
     setError(null)
-    const { error: err } = await supabase
-      .from('propiedades')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert({
-        asesor_id:                 session.user.id,
-        titulo:                    titulo.trim(),
-        tipo,
-        precio:                    Number(precio),
-        ubicacion:                 ubicacion.trim(),
-        ciudad:                    ciudad.trim().toLowerCase(),
-        imagenes:                  imageUrl.trim() ? [imageUrl.trim()] : [],
-        caracteristicas_lifestyle: DEFAULT_CARACTERISTICAS,
-      } as any)
+
+    // Build final images array
+    const uploadedUrls = await uploadFiles(session.user.id)
+    const urlListFromTextarea = imageUrls
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.startsWith('http'))
+    const allImages = [...uploadedUrls, ...urlListFromTextarea]
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: err } = await supabase.from('propiedades').insert({
+      asesor_id:                 session.user.id,
+      titulo:                    titulo.trim(),
+      tipo,
+      precio:                    Number(precio),
+      ubicacion:                 ubicacion.trim(),
+      ciudad:                    ciudad.trim().toLowerCase(),
+      descripcion:               descripcion.trim() || null,
+      imagenes:                  allImages,
+      caracteristicas_lifestyle: DEFAULT_CARACTERISTICAS,
+    } as any)
+
     setSaving(false)
     if (err) { setError(err.message); return }
     onCreated()
@@ -76,8 +149,8 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-        className="absolute bottom-0 left-0 right-0 z-50 rounded-t-[28px] overflow-hidden"
-        style={{ background: '#FDFAF6', maxHeight: '88%', display: 'flex', flexDirection: 'column' }}
+        className="absolute bottom-0 left-0 right-0 z-50 rounded-t-[28px]"
+        style={{ background: '#FDFAF6', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -85,7 +158,7 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
           <h2 className="font-display text-[20px] font-bold" style={{ color: '#1A1A1A' }}>
             Nueva propiedad
           </h2>
@@ -98,8 +171,12 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
           </button>
         </div>
 
-        {/* Form */}
-        <div className="overflow-y-auto px-5 pb-8 flex flex-col gap-4">
+        {/* Scrollable form body */}
+        <div className="overflow-y-auto px-5 pb-10 flex flex-col gap-4">
+
+          {/* ── Básicos ─────────────────────────────────── */}
+          <SectionLabel>Datos básicos</SectionLabel>
+
           <Field label="Título *" value={titulo} onChange={setTitulo} placeholder="Ej. Casa Moderna en Juriquilla" />
 
           <div>
@@ -109,22 +186,90 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
             <select
               value={tipo}
               onChange={(e) => setTipo(e.target.value as TipoPropiedad)}
-              className="w-full px-4 py-3 rounded-[14px] text-[14px] border-none outline-none"
-              style={{ background: '#F0EAE1', color: '#1A1A1A', appearance: 'none' }}
+              className={FIELD_CLASS}
+              style={{ ...FIELD_STYLE, appearance: 'none' }}
             >
-              <option value="casa">Casa</option>
-              <option value="departamento">Departamento</option>
-              <option value="terreno">Terreno</option>
-              <option value="local">Local</option>
-              <option value="oficina">Oficina</option>
+              {TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
           </div>
 
           <Field label="Precio (MXN) *" value={precio} onChange={setPrecio} placeholder="4500000" inputMode="numeric" />
-          <Field label="Ubicación *" value={ubicacion} onChange={setUbicacion} placeholder="Ej. Juriquilla, Querétaro" />
-          <Field label="Ciudad *" value={ciudad} onChange={setCiudad} placeholder="Ej. queretaro" />
-          <Field label="URL de imagen" value={imageUrl} onChange={setImageUrl} placeholder="https://..." inputMode="url" />
+          <Field label="Ubicación *"    value={ubicacion} onChange={setUbicacion} placeholder="Ej. Juriquilla, Querétaro" />
+          <Field label="Ciudad *"       value={ciudad}    onChange={setCiudad}    placeholder="Ej. queretaro" />
 
+          {/* ── Descripción con IA ──────────────────────── */}
+          <SectionLabel>Descripción</SectionLabel>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[12px] font-semibold" style={{ color: '#6B6B6B' }}>
+                Descripción
+              </label>
+              <button
+                type="button"
+                onClick={handleGenerateDescription}
+                className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border-none cursor-pointer transition-all active:scale-[.95]"
+                style={{ background: 'rgba(194,113,79,0.12)', color: '#C2714F' }}
+              >
+                ✨ Generar texto vendedor
+              </button>
+            </div>
+            <textarea
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Describe la propiedad o usa el generador IA ✨"
+              rows={4}
+              className={`${FIELD_CLASS} resize-none leading-relaxed`}
+              style={FIELD_STYLE}
+            />
+          </div>
+
+          {/* ── Imágenes ────────────────────────────────── */}
+          <SectionLabel>Imágenes</SectionLabel>
+
+          {/* Opción A — URLs */}
+          <div>
+            <label className="block text-[12px] font-semibold mb-1.5" style={{ color: '#6B6B6B' }}>
+              Opción A — URLs (separadas por comas)
+            </label>
+            <textarea
+              value={imageUrls}
+              onChange={(e) => setImageUrls(e.target.value)}
+              placeholder="https://img1.jpg, https://img2.jpg, ..."
+              rows={2}
+              className={`${FIELD_CLASS} resize-none leading-relaxed`}
+              style={FIELD_STYLE}
+            />
+          </div>
+
+          {/* Opción B — archivos locales */}
+          <div>
+            <label className="block text-[12px] font-semibold mb-1.5" style={{ color: '#6B6B6B' }}>
+              Opción B — Subir desde dispositivo
+            </label>
+            <label
+              className="flex items-center gap-2 px-4 py-3 rounded-[14px] cursor-pointer"
+              style={{ background: '#F0EAE1' }}
+            >
+              <span className="text-[18px]">📷</span>
+              <span className="text-[13px]" style={{ color: localFiles.length ? '#1A1A1A' : '#9B9B9B' }}>
+                {localFiles.length > 0
+                  ? `${localFiles.length} archivo${localFiles.length > 1 ? 's' : ''} seleccionado${localFiles.length > 1 ? 's' : ''}`
+                  : 'Seleccionar imágenes…'}
+              </span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setLocalFiles(Array.from(e.target.files ?? []))}
+              />
+            </label>
+          </div>
+
+          {/* ── Error + Submit ──────────────────────────── */}
           {error && (
             <p
               className="text-[12px] font-medium px-3 py-2 rounded-[10px]"
@@ -140,7 +285,7 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
             className="w-full py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
           >
-            {saving ? 'Guardando…' : 'Guardar propiedad'}
+            {saving ? 'Guardando…' : '+ Agregar Propiedad'}
           </button>
         </div>
       </motion.div>
@@ -148,14 +293,24 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
   )
 }
 
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-widest -mb-1" style={{ color: '#C2714F' }}>
+      {children}
+    </p>
+  )
+}
+
 function Field({
   label, value, onChange, placeholder, inputMode,
 }: {
-  label: string
-  value: string
-  onChange: (v: string) => void
+  label:       string
+  value:       string
+  onChange:    (v: string) => void
   placeholder: string
-  inputMode?: 'numeric' | 'decimal' | 'text' | 'email' | 'tel' | 'url' | 'search' | 'none'
+  inputMode?:  'numeric' | 'decimal' | 'text' | 'email' | 'tel' | 'url' | 'search' | 'none'
 }) {
   return (
     <div>
@@ -167,8 +322,8 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         inputMode={inputMode}
-        className="w-full px-4 py-3 rounded-[14px] text-[14px] border-none outline-none"
-        style={{ background: '#F0EAE1', color: '#1A1A1A' }}
+        className={FIELD_CLASS}
+        style={FIELD_STYLE}
       />
     </div>
   )
