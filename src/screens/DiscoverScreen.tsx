@@ -501,7 +501,7 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex justify-center items-center gap-5 pb-5">
+      <div className="flex-shrink-0 flex justify-center items-center gap-5 pb-24">
         {/* NOPE */}
         <button
           title="No me interesa esta propiedad"

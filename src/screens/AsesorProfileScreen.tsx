@@ -92,7 +92,7 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
         {/* Back button — custom router: onBack → detail, onFallback → feed as safety */}
         <button
           onClick={() => { try { onBack() } catch { onFallback() } }}
-          className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
+          className="absolute top-2 left-2 z-50 p-4 -ml-1 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
           style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}
         >
           <span className="text-white text-[16px] font-bold leading-none">←</span>

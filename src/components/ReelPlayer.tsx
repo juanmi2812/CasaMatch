@@ -235,7 +235,7 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
       </div>
 
       {/* ── Property info (bottom left) ──────────────────────────── */}
-      <div className="absolute bottom-4 left-4 right-[72px] z-20">
+      <div className="absolute bottom-20 left-4 right-[72px] z-20">
         <span
           className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold text-white mb-2"
           style={{ background: 'rgba(194,113,79,0.72)', backdropFilter: 'blur(8px)' }}
