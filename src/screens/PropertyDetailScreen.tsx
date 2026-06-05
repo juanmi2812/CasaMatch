@@ -1,11 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { supabase } from '../lib/supabaseClient'
 import type { PropiedadMock } from '../services/mockData'
-import MortgageSimulator from '../components/MortgageSimulator'
 
 interface Props {
   property: PropiedadMock
   onBack:   () => void
+}
+
+interface AsesorInfo {
+  nombre:     string
+  telefono:   string | null
+  avatar_url: string | null
+  agencia:    string | null
 }
 
 const LIFESTYLE_BARS = [
@@ -27,11 +34,28 @@ function formatPrice(n: number): string {
   return `$${(n / 1_000).toFixed(0)}k MXN`
 }
 
-export default function PropertyDetailScreen({ property, onBack }: Props) {
-  const [galleryIdx,  setGalleryIdx]  = useState(0)
-  const pointerStart                  = useRef(0)
+function initials(name: string): string {
+  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+}
 
-  // Use real images from DB when available; fall back to gradient variants
+export default function PropertyDetailScreen({ property, onBack }: Props) {
+  const [galleryIdx, setGalleryIdx] = useState(0)
+  const [asesor,     setAsesor]     = useState<AsesorInfo | null>(null)
+  const pointerStart                = useRef(0)
+
+  useEffect(() => {
+    if (!property.asesorId) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(supabase as any)
+      .from('perfiles')
+      .select('nombre,telefono,avatar_url,agencia')
+      .eq('id', property.asesorId)
+      .single()
+      .then(({ data }: { data: AsesorInfo | null }) => {
+        if (data) setAsesor(data)
+      })
+  }, [property.asesorId])
+
   const slides: Array<{ imageUrl?: string; from?: string; to?: string }> =
     property.imagenes && property.imagenes.length > 0
       ? property.imagenes.map((url) => ({ imageUrl: url }))
@@ -43,6 +67,11 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         ]
 
   const GALLERY_COUNT = slides.length
+
+  const asesorName = asesor?.nombre ?? 'Asesor'
+  const waLink     = asesor?.telefono
+    ? `https://wa.me/${asesor.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! Estoy interesado en tu propiedad: ${property.titulo}`)}`
+    : null
 
   return (
     <div className="flex flex-col bg-white">
@@ -58,7 +87,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           else if (diff > 40) setGalleryIdx((i) => Math.max(i - 1, 0))
         }}
       >
-        {/* Slides strip */}
         <div
           className="flex h-full"
           style={{
@@ -79,10 +107,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
               }}
             >
               {!s.imageUrl && (
-                <span
-                  className="text-[110px] select-none pointer-events-none"
-                  style={{ opacity: 0.10 }}
-                >
+                <span className="text-[110px] select-none pointer-events-none" style={{ opacity: 0.10 }}>
                   {property.emoji}
                 </span>
               )}
@@ -90,7 +115,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           ))}
         </div>
 
-        {/* Back button */}
         <button
           onClick={onBack}
           className="absolute top-5 left-4 z-10 w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
@@ -99,7 +123,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           <span className="text-white text-[18px] font-bold leading-none">←</span>
         </button>
 
-        {/* Match badge */}
         <div className="absolute top-5 right-4 z-10">
           <div
             className="px-3 py-1.5 rounded-full text-white text-[12px] font-bold"
@@ -113,7 +136,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           </div>
         </div>
 
-        {/* Dot indicators */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
           {Array.from({ length: GALLERY_COUNT }).map((_, i) => (
             <button
@@ -124,9 +146,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
                 width:        i === galleryIdx ? 20 : 6,
                 height:       6,
                 borderRadius: 3,
-                background:   i === galleryIdx
-                  ? 'white'
-                  : 'rgba(255,255,255,0.45)',
+                background:   i === galleryIdx ? 'white' : 'rgba(255,255,255,0.45)',
               }}
             />
           ))}
@@ -142,10 +162,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           >
             {property.titulo}
           </h1>
-          <p
-            className="font-display text-[20px] font-bold flex-shrink-0"
-            style={{ color: '#C2714F' }}
-          >
+          <p className="font-display text-[20px] font-bold flex-shrink-0" style={{ color: '#C2714F' }}>
             {formatPrice(property.precio)}
           </p>
         </div>
@@ -153,7 +170,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           📍 {property.ubicacion}
         </p>
 
-        {/* Tags */}
         <div className="flex flex-wrap gap-1.5 mb-5">
           {property.tags.map((tag) => (
             <span
@@ -170,7 +186,6 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           ))}
         </div>
 
-        {/* Specs row */}
         <div
           className="flex rounded-[20px] p-4"
           style={{ background: '#F5EFE6', border: '1px solid rgba(194,113,79,0.12)' }}
@@ -186,10 +201,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
               style={i > 0 ? { borderLeft: '1px solid rgba(194,113,79,0.15)' } : {}}
             >
               <span className="text-[18px] block mb-0.5">{spec.icon}</span>
-              <span
-                className="font-display text-[20px] font-bold block"
-                style={{ color: '#1A1A1A' }}
-              >
+              <span className="font-display text-[20px] font-bold block" style={{ color: '#1A1A1A' }}>
                 {spec.value}
               </span>
               <span className="text-[11px]" style={{ color: '#6B6B6B' }}>{spec.unit}</span>
@@ -212,8 +224,8 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
 
         <div className="flex flex-col gap-4">
           {LIFESTYLE_BARS.map(({ key, label, icon }, idx) => {
-            const raw  = property.caracteristicas[key as LifestyleKey] as number
-            const pct  = (raw / 5) * 100
+            const raw   = property.caracteristicas[key as LifestyleKey] as number
+            const pct   = (raw / 5) * 100
             const color = pct >= 70 ? '#4ADE80' : pct >= 40 ? '#FBD249' : '#F87171'
             const grad  = pct >= 70
               ? 'linear-gradient(90deg, #4ADE80, #22C55E)'
@@ -223,27 +235,16 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
             return (
               <div key={key}>
                 <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[13px] text-white">
-                    {icon} {label}
-                  </span>
-                  <span className="text-[12px] font-bold" style={{ color }}>
-                    {raw}/5
-                  </span>
+                  <span className="text-[13px] text-white">{icon} {label}</span>
+                  <span className="text-[12px] font-bold" style={{ color }}>{raw}/5</span>
                 </div>
-                <div
-                  className="h-[6px] rounded-full overflow-hidden"
-                  style={{ background: 'rgba(255,255,255,0.10)' }}
-                >
+                <div className="h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: grad }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
-                    transition={{
-                      duration: 0.75,
-                      delay:    idx * 0.07,
-                      ease:     [0.4, 0, 0.2, 1],
-                    }}
+                    transition={{ duration: 0.75, delay: idx * 0.07, ease: [0.4, 0, 0.2, 1] }}
                   />
                 </div>
               </div>
@@ -251,32 +252,20 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           })}
         </div>
 
-        {/* Boolean badges */}
-        {(property.caracteristicas.pet_friendly ||
-          property.caracteristicas.familias ||
-          property.caracteristicas.home_office) && (
+        {(property.caracteristicas.pet_friendly || property.caracteristicas.familias || property.caracteristicas.home_office) && (
           <div className="flex flex-wrap gap-2 mt-5">
             {property.caracteristicas.pet_friendly && (
-              <span
-                className="px-3 py-1 rounded-full text-[11px] font-medium text-white"
-                style={{ background: 'rgba(255,255,255,0.12)' }}
-              >
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
                 🐾 Pet friendly
               </span>
             )}
             {property.caracteristicas.familias && (
-              <span
-                className="px-3 py-1 rounded-full text-[11px] font-medium text-white"
-                style={{ background: 'rgba(255,255,255,0.12)' }}
-              >
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
                 👨‍👩‍👧 Zona familiar
               </span>
             )}
             {property.caracteristicas.home_office && (
-              <span
-                className="px-3 py-1 rounded-full text-[11px] font-medium text-white"
-                style={{ background: 'rgba(255,255,255,0.12)' }}
-              >
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
                 💻 Home office
               </span>
             )}
@@ -284,9 +273,9 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         )}
       </div>
 
-      {/* ── Verified Advisor ───────────────────────────────────── */}
+      {/* ── Asesor ─────────────────────────────────────────────── */}
       <div
-        className="mx-5 rounded-[24px] p-5 mb-5"
+        className="mx-5 rounded-[24px] p-5 mb-8"
         style={{
           background: 'white',
           border:     '1.5px solid #EDE4D7',
@@ -294,20 +283,20 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         }}
       >
         <div className="flex items-center gap-3 mb-4">
-          {/* Avatar */}
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-display text-[20px] font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
+            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-display text-[16px] font-bold text-white overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)', flexShrink: 0 }}
           >
-            M
+            {asesor?.avatar_url ? (
+              <img src={asesor.avatar_url} alt={asesorName} className="w-full h-full object-cover" />
+            ) : (
+              initials(asesorName)
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p
-                className="text-[15px] font-semibold truncate"
-                style={{ color: '#1A1A1A' }}
-              >
-                Marco Fernández
+              <p className="text-[15px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                {asesorName}
               </p>
               <span
                 className="px-1.5 py-[2px] rounded text-[9px] font-black flex-shrink-0 tracking-[0.4px]"
@@ -317,43 +306,33 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
               </span>
             </div>
             <p className="text-[12px]" style={{ color: '#6B6B6B' }}>
-              Asesor Premium · 8 años de experiencia
+              {asesor?.agencia ?? 'Asesor inmobiliario'}
             </p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>4.9 ★</p>
-            <p className="text-[11px]" style={{ color: '#6B6B6B' }}>127 reseñas</p>
           </div>
         </div>
 
-        <p
-          className="text-[13px] leading-[1.55] mb-4 italic"
-          style={{ color: '#6B6B6B' }}
-        >
-          "Esta propiedad tiene un potencial de plusvalía excepcional en la zona.
-          Estaré encantado de mostrártela en persona o por videollamada."
-        </p>
-
         <div className="flex gap-2.5">
-          <button
-            className="flex-1 py-[13px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
-            style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
-          >
-            💬 Agendar visita
-          </button>
-          <button
-            className="w-[52px] py-[13px] rounded-[16px] text-[18px] border-none cursor-pointer transition-all active:scale-[.97]"
-            style={{ background: '#F5EFE6' }}
-          >
-            📞
-          </button>
+          {waLink ? (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-[13px] rounded-[16px] text-[14px] font-semibold text-white text-center no-underline transition-all active:scale-[.97]"
+              style={{ background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              💬 WhatsApp
+            </a>
+          ) : (
+            <button
+              className="flex-1 py-[13px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+              style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
+            >
+              💬 Contactar asesor
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── Mortgage Simulator ─────────────────────────────────── */}
-      <MortgageSimulator initialPrice={property.precio} />
-
-      <div className="h-8 flex-shrink-0" />
     </div>
   )
 }

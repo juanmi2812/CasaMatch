@@ -39,6 +39,7 @@ export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
 
   return {
     id:           p.id,
+    asesorId:     p.asesor_id,
     titulo:       p.titulo,
     ubicacion:    p.ubicacion,
     ciudad:       p.ciudad.toLowerCase(),

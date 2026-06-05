@@ -2,6 +2,7 @@ import type { CaracteristicasLifestyle, TipoPropiedad } from '../types/database'
 
 export interface PropiedadMock {
   id:              string
+  asesorId?:       string   // FK → perfiles.id
   titulo:          string
   ubicacion:       string
   ciudad:          string

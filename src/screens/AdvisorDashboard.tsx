@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AIGeneratorModal from '../components/ui/AIGeneratorModal'
 import NewPropertyModal from '../components/ui/NewPropertyModal'
+import EditPropertyModal from '../components/ui/EditPropertyModal'
 import AdvisorSettingsModal from '../components/ui/AdvisorSettingsModal'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -18,11 +19,18 @@ interface LeadRow {
 }
 
 interface PropRow {
-  id:       string
-  titulo:   string
-  tipo:     string
-  imagenes: string[]
-  precio:   number
+  id:          string
+  titulo:      string
+  tipo:        string
+  imagenes:    string[]
+  precio:      number
+  activa:      boolean
+  recamaras:   number | null
+  banos:       number | null
+  m2:          number | null
+  ubicacion:   string
+  ciudad:      string
+  descripcion: string | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -66,6 +74,7 @@ export default function AdvisorDashboard() {
   const [kpisKey,          setKpisKey]         = useState(0)
   const [showAIModal,      setShowAIModal]     = useState(false)
   const [showNewPropModal, setShowNewPropModal] = useState(false)
+  const [editingProp,      setEditingProp]     = useState<PropRow | null>(null)
   const [showSettings,     setShowSettings]    = useState(false)
 
   // Fetch profile
@@ -117,11 +126,10 @@ export default function AdvisorDashboard() {
     setPropsLoading(true)
     supabase
       .from('propiedades')
-      .select('id,titulo,tipo,imagenes,precio')
+      .select('id,titulo,tipo,imagenes,precio,activa,recamaras,banos,m2,ubicacion,ciudad,descripcion')
       .eq('asesor_id', session.user.id)
-      .eq('activa', true)
       .order('creado_en', { ascending: false })
-      .limit(5)
+      .limit(20)
       .then(({ data }) => {
         setMyProps((data ?? []) as PropRow[])
         setPropsLoading(false)
@@ -413,10 +421,27 @@ export default function AdvisorDashboard() {
                         {prop.tipo}
                       </span>
                     </div>
-                    <p className="text-[12px] font-bold" style={{ color: '#C2714F' }}>
-                      {fmtPrice(prop.precio)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-bold" style={{ color: '#C2714F' }}>
+                        {fmtPrice(prop.precio)}
+                      </p>
+                      {!prop.activa && (
+                        <span
+                          className="text-[10px] font-semibold px-1.5 py-[2px] rounded-full"
+                          style={{ background: 'rgba(107,107,107,0.12)', color: '#6B6B6B' }}
+                        >
+                          Rentada/Vendida
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setEditingProp(prop)}
+                    className="flex-shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full border-none cursor-pointer transition-all active:scale-[.95]"
+                    style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                  >
+                    Editar
+                  </button>
                 </div>
               </div>
             ))}
@@ -472,6 +497,16 @@ export default function AdvisorDashboard() {
           <NewPropertyModal
             onDismiss={() => setShowNewPropModal(false)}
             onCreated={() => { setShowNewPropModal(false); setKpisKey((k) => k + 1) }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingProp && (
+          <EditPropertyModal
+            prop={editingProp}
+            onDismiss={() => setEditingProp(null)}
+            onSaved={() => { setEditingProp(null); setKpisKey((k) => k + 1) }}
           />
         )}
       </AnimatePresence>

@@ -69,6 +69,9 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
   const [precio,      setPrecio]      = useState('')
   const [ubicacion,   setUbicacion]   = useState('')
   const [ciudad,      setCiudad]      = useState('')
+  const [recamaras,   setRecamaras]   = useState('')
+  const [banos,       setBanos]       = useState('')
+  const [m2,          setM2]          = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [imageUrls,   setImageUrls]   = useState('')   // comma-separated
   const [localFiles,  setLocalFiles]  = useState<File[]>([])
@@ -120,6 +123,9 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
       precio:                    Number(precio),
       ubicacion:                 ubicacion.trim(),
       ciudad:                    ciudad.trim().toLowerCase(),
+      recamaras:                 recamaras ? Number(recamaras) : null,
+      banos:                     banos     ? Number(banos)     : null,
+      m2:                        m2        ? Number(m2)        : null,
       descripcion:               descripcion.trim() || null,
       imagenes:                  allImages,
       caracteristicas_lifestyle: DEFAULT_CARACTERISTICAS,
@@ -134,6 +140,9 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
     setPrecio('')
     setUbicacion('')
     setCiudad('')
+    setRecamaras('')
+    setBanos('')
+    setM2('')
     setDescripcion('')
     setImageUrls('')
     setLocalFiles([])
@@ -204,9 +213,15 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
             </select>
           </div>
 
-          <Field label="Precio (MXN) *" value={precio} onChange={setPrecio} placeholder="4500000" inputMode="numeric" />
+          <Field label="Precio (MXN) *" value={precio}    onChange={setPrecio}    placeholder="4500000"                   inputMode="numeric" />
           <Field label="Ubicación *"    value={ubicacion} onChange={setUbicacion} placeholder="Ej. Juriquilla, Querétaro" />
           <Field label="Ciudad *"       value={ciudad}    onChange={setCiudad}    placeholder="Ej. queretaro" />
+
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Recámaras"     value={recamaras} onChange={setRecamaras} placeholder="3" inputMode="numeric" />
+            <Field label="Baños"         value={banos}     onChange={setBanos}     placeholder="2" inputMode="numeric" />
+            <Field label="m²"            value={m2}        onChange={setM2}        placeholder="180" inputMode="numeric" />
+          </div>
 
           {/* ── Descripción con IA ──────────────────────── */}
           <SectionLabel>Descripción</SectionLabel>
