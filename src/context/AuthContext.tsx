@@ -8,7 +8,7 @@ interface AuthContextValue {
   loading:             boolean
   preferencias:        PreferenciaOnboarding | null
   signIn:              (email: string, password: string) => Promise<void>
-  signUp:              (email: string, password: string) => Promise<void>
+  signUp:              (email: string, password: string, rol?: 'usuario' | 'asesor') => Promise<void>
   signInWithGoogle:    () => Promise<void>
   signOut:             () => Promise<void>
   refreshPreferencias: () => Promise<void>
@@ -56,10 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
   }
 
-  async function signUp(email: string, password: string) {
+  async function signUp(email: string, password: string, rol: 'usuario' | 'asesor' = 'usuario') {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
     if (data.user && !data.session) throw new Error('CONFIRM_EMAIL')
+    // Trigger creates profile with rol='usuario'; promote to asesor when requested
+    if (rol === 'asesor' && data.user) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('perfiles').update({ rol: 'asesor' }).eq('id', data.user.id)
+    }
   }
 
   async function signInWithGoogle() {

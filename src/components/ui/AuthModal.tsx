@@ -16,6 +16,7 @@ export default function AuthModal({ onRegister, onDismiss, initialMode = 'login'
   const [emailTab,     setEmailTab]    = useState<EmailTab>(initialMode)
   const [email,        setEmail]       = useState('')
   const [password,     setPassword]    = useState('')
+  const [rol,          setRol]         = useState<'usuario' | 'asesor'>('usuario')
   const [loading,      setLoading]     = useState(false)
   const [error,        setError]       = useState<string | null>(null)
   const [confirmEmail, setConfirmEmail] = useState(false)
@@ -28,7 +29,7 @@ export default function AuthModal({ onRegister, onDismiss, initialMode = 'login'
       if (emailTab === 'login') {
         await signIn(email, password)
       } else {
-        await signUp(email, password)
+        await signUp(email, password, rol)
       }
       onRegister()
     } catch (err) {
@@ -163,6 +164,37 @@ export default function AuthModal({ onRegister, onDismiss, initialMode = 'login'
                   className="w-full px-4 py-[13px] rounded-[14px] text-[14px] outline-none border-2 transition-all"
                   style={{ borderColor: '#EDE4D7', background: '#FAFAFA', color: '#1A1A1A' }}
                 />
+
+                {/* Account type selector — register only */}
+                {emailTab === 'register' && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[12px] font-semibold px-0.5" style={{ color: '#6B6B6B' }}>
+                      Tipo de cuenta
+                    </p>
+                    <div className="flex gap-2">
+                      {([
+                        { value: 'usuario', label: '🏠 Soy Cliente',            sub: 'Busco propiedades'   },
+                        { value: 'asesor',  label: '👔 Soy Asesor',             sub: 'Publico propiedades' },
+                      ] as const).map(({ value, label, sub }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setRol(value)}
+                          className="flex-1 py-2.5 px-2 rounded-[14px] text-left border-2 cursor-pointer transition-all"
+                          style={{
+                            borderColor: rol === value ? '#C2714F' : '#EDE4D7',
+                            background:  rol === value ? 'rgba(194,113,79,0.06)' : '#FAFAFA',
+                          }}
+                        >
+                          <span className="block text-[13px] font-semibold" style={{ color: '#1A1A1A' }}>
+                            {label}
+                          </span>
+                          <span className="block text-[11px]" style={{ color: '#9B9B9B' }}>{sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <p className="text-[12px] px-1" style={{ color: '#DC2626' }}>{error}</p>

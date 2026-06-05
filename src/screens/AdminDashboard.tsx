@@ -139,19 +139,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Data source note */}
-      <div className="px-4 mb-8">
-        <div
-          className="rounded-[16px] px-4 py-3 flex items-start gap-3"
-          style={{ background: 'rgba(194,113,79,0.07)' }}
-        >
-          <span className="text-[16px] mt-0.5">🗄</span>
-          <p className="text-[11px] leading-[1.6]" style={{ color: '#7A5A4A' }}>
-            Datos en tiempo real desde la vista <strong>kpis_globales</strong> (Supabase).
-            Acceso restringido a usuarios con <code>app_metadata.rol = "admin"</code>.
-          </p>
-        </div>
-      </div>
     </div>
   )
 }
