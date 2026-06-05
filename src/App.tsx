@@ -121,7 +121,8 @@ function AppContent() {
       {screen === 'asesor-perfil' && asesorPerfilId && (
         <AsesorProfileScreen
           asesorId={asesorPerfilId}
-          onBack={() => { setScreen('detail'); setAsesorPerfilId(null) }}
+          onBack={() => { setAsesorPerfilId(null); setScreen(selectedProperty ? 'detail' : 'feed') }}
+          onFallback={() => { setAsesorPerfilId(null); setScreen('feed') }}
         />
       )}
       {screen === 'reels'   && <ReelsScreen />}

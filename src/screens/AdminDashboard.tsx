@@ -197,7 +197,7 @@ export default function AdminDashboard() {
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#9B9B9B' }}>
           Plataforma global
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
           <KpiCard
             icon="🏠" label="Propiedades activas"
             value={kpis?.propiedades_activas ?? 0} loading={loading}

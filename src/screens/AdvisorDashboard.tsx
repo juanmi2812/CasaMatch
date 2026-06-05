@@ -211,7 +211,7 @@ export default function AdvisorDashboard() {
 
       {/* ── Metrics grid ───────────────────────────────────────── */}
       <div className="px-4 mb-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {metrics.map((m) => (
             <motion.div
               key={m.label}

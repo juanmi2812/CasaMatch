@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 interface Props {
-  asesorId: string
-  onBack:   () => void
+  asesorId:   string
+  onBack:     () => void
+  onFallback: () => void  // navigate to feed if detail is unavailable
 }
 
 interface AsesorData {
@@ -44,7 +45,7 @@ function initials(name: string): string {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
-export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
+export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Props) {
   const [asesor,      setAsesor]     = useState<AsesorData | null>(null)
   const [propiedades, setPropiedades] = useState<PropCard[]>([])
   const [loading,     setLoading]    = useState(true)
@@ -88,9 +89,9 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           overflow:    'hidden',
         }}
       >
-        {/* Back button */}
+        {/* Back button — custom router: onBack → detail, onFallback → feed as safety */}
         <button
-          onClick={onBack}
+          onClick={() => { try { onBack() } catch { onFallback() } }}
           className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
           style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}
         >

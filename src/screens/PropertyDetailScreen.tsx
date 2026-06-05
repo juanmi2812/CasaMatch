@@ -78,7 +78,7 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
   }
 
   return (
-    <div className="flex flex-col bg-white" style={{ minHeight: '100%' }}>
+    <div className="flex flex-col bg-white overflow-x-hidden" style={{ minHeight: '100%' }}>
 
       {/* ── Gallery ────────────────────────────────────────────── */}
       <div

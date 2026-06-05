@@ -27,7 +27,7 @@ export default function LandingScreen({ onStart, onExplore, onLogin, onRegister 
       />
 
       {/* Content layer */}
-      <div className="relative z-10 flex flex-col min-h-svh px-7 pt-[60px] pb-12 justify-between">
+      <div className="relative z-10 flex flex-col min-h-[100dvh] px-5 md:px-7 pt-10 md:pt-[60px] pb-8 md:pb-12 justify-between">
 
         {/* Logo */}
         <div className="font-display text-[28px] font-bold tracking-[-0.5px]">
@@ -35,7 +35,7 @@ export default function LandingScreen({ onStart, onExplore, onLogin, onRegister 
         </div>
 
         {/* Hero block */}
-        <div className="flex-1 flex flex-col justify-center gap-5 py-8">
+        <div className="flex-1 flex flex-col justify-center gap-4 md:gap-5 py-5 md:py-8">
           <div
             className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-medium w-fit"
             style={{
@@ -48,12 +48,12 @@ export default function LandingScreen({ onStart, onExplore, onLogin, onRegister 
             ✦ Nueva forma de buscar casa
           </div>
 
-          <h1 className="font-display text-[44px] leading-[1.1] font-bold tracking-[-1px]">
+          <h1 className="font-display text-[36px] md:text-[44px] leading-[1.1] font-bold tracking-[-1px]">
             Tu próxima<br />casa, en un<br />
             <em style={{ color: '#E8A98A', fontStyle: 'italic' }}>swipe.</em>
           </h1>
 
-          <p className="text-[16px] leading-[1.6] font-light" style={{ color: 'rgba(255,255,255,.65)' }}>
+          <p className="text-[14px] md:text-[16px] leading-[1.6] font-light" style={{ color: 'rgba(255,255,255,.65)' }}>
             Encuentra propiedades compatibles con tu estilo de vida,
             presupuesto y lo que realmente buscas.
           </p>
