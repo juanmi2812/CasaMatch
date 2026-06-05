@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import type { KpisGlobales } from '../types/database'
 
+
 function StatCard({ icon, label, value, loading }: {
   icon: string; label: string; value: string | number; loading: boolean
 }) {
@@ -25,7 +26,7 @@ function StatCard({ icon, label, value, loading }: {
 }
 
 export default function AdminDashboard() {
-  const { session } = useAuth()
+  const { session, signOut } = useAuth()
   const [kpis,    setKpis]    = useState<KpisGlobales | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
@@ -48,17 +49,24 @@ export default function AdminDashboard() {
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
 
       {/* Header */}
-      <div className="px-5 pt-1 pb-5">
+      <div className="px-5 pt-3 pb-5">
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="font-display text-[24px] font-bold" style={{ color: '#1A1A1A' }}>
-            Admin Dashboard
+          <h1 className="font-display text-[22px] font-bold flex-1" style={{ color: '#1A1A1A' }}>
+            Panel de Control
           </h1>
           <div
-            className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white"
+            className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white mr-2"
             style={{ background: '#1A1A1A' }}
           >
             Admin
           </div>
+          <button
+            onClick={() => signOut()}
+            className="text-[12px] px-3 py-1.5 rounded-full border-none cursor-pointer transition-all active:scale-[.95]"
+            style={{ background: 'rgba(194,113,79,0.12)', color: '#C2714F' }}
+          >
+            Cerrar sesión
+          </button>
         </div>
         <p className="text-[13px]" style={{ color: '#9B9B9B' }}>
           Métricas globales — kpis_globales

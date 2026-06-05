@@ -1,6 +1,8 @@
 interface Props {
-  onStart:   () => void
-  onExplore: () => void
+  onStart:    () => void
+  onExplore:  () => void
+  onLogin:    () => void
+  onRegister: () => void
 }
 
 const STATS = [
@@ -9,7 +11,7 @@ const STATS = [
   { num: '320+', label: 'Asesores' },
 ]
 
-export default function LandingScreen({ onStart, onExplore }: Props) {
+export default function LandingScreen({ onStart, onExplore, onLogin, onRegister }: Props) {
   return (
     <div className="relative flex-1 text-white" style={{ background: '#1A1A1A' }}>
       {/* Radial gradient background */}
@@ -99,6 +101,24 @@ export default function LandingScreen({ onStart, onExplore }: Props) {
           >
             Solo explorar →
           </button>
+
+          {/* Auth row */}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={onLogin}
+              className="flex-1 rounded-full py-[12px] text-[14px] font-semibold font-body border-none cursor-pointer transition-all active:scale-[.97]"
+              style={{ background: 'rgba(255,255,255,.12)', color: 'white', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.18)' }}
+            >
+              Iniciar sesión
+            </button>
+            <button
+              onClick={onRegister}
+              className="flex-1 rounded-full py-[12px] text-[14px] font-semibold font-body border-none cursor-pointer transition-all active:scale-[.97]"
+              style={{ background: 'rgba(232,169,138,.18)', color: '#E8A98A', backdropFilter: 'blur(8px)', border: '1px solid rgba(232,169,138,.30)' }}
+            >
+              Crear cuenta
+            </button>
+          </div>
         </div>
       </div>
     </div>

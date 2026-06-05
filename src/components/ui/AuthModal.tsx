@@ -5,14 +5,15 @@ import { useAuth } from '../../context/AuthContext'
 type EmailTab = 'login' | 'register'
 
 interface Props {
-  onRegister: () => void
-  onDismiss:  () => void
+  onRegister:   () => void
+  onDismiss:    () => void
+  initialMode?: EmailTab
 }
 
-export default function AuthModal({ onRegister, onDismiss }: Props) {
+export default function AuthModal({ onRegister, onDismiss, initialMode = 'login' }: Props) {
   const { signIn, signUp } = useAuth()
 
-  const [emailTab,     setEmailTab]    = useState<EmailTab>('login')
+  const [emailTab,     setEmailTab]    = useState<EmailTab>(initialMode)
   const [email,        setEmail]       = useState('')
   const [password,     setPassword]    = useState('')
   const [loading,      setLoading]     = useState(false)

@@ -21,11 +21,12 @@ interface OnboardingResult {
 }
 
 function AppContent() {
-  const { preferencias } = useAuth()
+  const { preferencias, session: authSession } = useAuth()
   const [screen,           setScreen]           = useState<Screen>('landing')
   const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
   const [onboardingResult, setOnboardingResult] = useState<OnboardingResult>({ ciudad: null, tipoPropiedad: null })
   const [showAppAuthModal, setShowAppAuthModal] = useState(false)
+  const [authModalMode,    setAuthModalMode]    = useState<'login' | 'register'>('login')
 
   // Sync DiscoverScreen filters when user updates saved preferences from ProfileScreen
   useEffect(() => {
@@ -36,6 +37,19 @@ function AppContent() {
       })
     }
   }, [preferencias])
+
+  // Redirect to landing when session is cleared (sign-out from any protected screen)
+  useEffect(() => {
+    const protectedScreens: Screen[] = ['admin', 'advisor', 'profile']
+    if (!authSession && protectedScreens.includes(screen)) {
+      setScreen('landing')
+    }
+  }, [authSession, screen])
+
+  function openAuthModal(mode: 'login' | 'register') {
+    setAuthModalMode(mode)
+    setShowAppAuthModal(true)
+  }
 
   async function navigateByRole() {
     const { data: { session } } = await supabase.auth.getSession()
@@ -76,6 +90,8 @@ function AppContent() {
         <LandingScreen
           onStart={() => setScreen('onboarding')}
           onExplore={() => setScreen('feed')}
+          onLogin={() => openAuthModal('login')}
+          onRegister={() => openAuthModal('register')}
         />
       )}
       {screen === 'onboarding' && (
@@ -113,6 +129,7 @@ function AppContent() {
       <AnimatePresence>
         {showAppAuthModal && (
           <AuthModal
+            initialMode={authModalMode}
             onRegister={async () => {
               setShowAppAuthModal(false)
               await navigateByRole()
