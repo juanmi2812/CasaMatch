@@ -105,7 +105,6 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
     setSaving(true)
     setError(null)
 
-    // Build final images array
     const uploadedUrls = await uploadFiles(session.user.id)
     const urlListFromTextarea = imageUrls
       .split(',')
@@ -114,7 +113,7 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
     const allImages = [...uploadedUrls, ...urlListFromTextarea]
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: err } = await supabase.from('propiedades').insert({
+    const { error: err } = await (supabase as any).from('propiedades').insert({
       asesor_id:                 session.user.id,
       titulo:                    titulo.trim(),
       tipo,
@@ -124,10 +123,20 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
       descripcion:               descripcion.trim() || null,
       imagenes:                  allImages,
       caracteristicas_lifestyle: DEFAULT_CARACTERISTICAS,
-    } as any)
+    })
 
     setSaving(false)
     if (err) { setError(err.message); return }
+
+    alert('¡Propiedad guardada con éxito!')
+    setTitulo('')
+    setTipo('casa')
+    setPrecio('')
+    setUbicacion('')
+    setCiudad('')
+    setDescripcion('')
+    setImageUrls('')
+    setLocalFiles([])
     onCreated()
   }
 
@@ -172,7 +181,7 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
         </div>
 
         {/* Scrollable form body */}
-        <div className="overflow-y-auto px-5 pb-10 flex flex-col gap-4">
+        <div className="overflow-y-auto px-5 pb-32 flex flex-col gap-4">
 
           {/* ── Básicos ─────────────────────────────────── */}
           <SectionLabel>Datos básicos</SectionLabel>
@@ -282,10 +291,9 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+            className="w-full bg-orange-600 text-white font-bold text-lg py-4 rounded-xl mt-6 mb-8 shadow-lg active:scale-95 disabled:opacity-60 border-none cursor-pointer transition-all"
           >
-            {saving ? 'Guardando…' : '+ Agregar Propiedad'}
+            {saving ? 'Guardando…' : 'Guardar Propiedad'}
           </button>
         </div>
       </motion.div>
