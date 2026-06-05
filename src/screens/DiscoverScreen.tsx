@@ -504,45 +504,40 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
       <div className="flex-shrink-0 flex justify-center items-center gap-5 pb-5">
         {/* NOPE */}
         <button
+          title="No me interesa esta propiedad"
           onClick={handleNope}
           disabled={cards.length === 0}
           className="w-[58px] h-[58px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{
-            background: 'white',
-            boxShadow:  '0 4px 18px rgba(0,0,0,0.11)',
-          }}
+          style={{ background: 'white', boxShadow: '0 4px 18px rgba(0,0,0,0.11)' }}
         >
           <span className="text-[22px] leading-none" style={{ color: '#F87171' }}>✕</span>
         </button>
 
         {/* INFO */}
         <button
+          title="Ver detalles completos de la propiedad"
           onClick={() => cards.length > 0 && onViewDetail(cards[0])}
           disabled={cards.length === 0}
           className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{
-            background: 'white',
-            boxShadow:  '0 4px 14px rgba(0,0,0,0.09)',
-          }}
+          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
         >
           <span className="text-[17px] leading-none" style={{ color: '#C2714F' }}>ℹ</span>
         </button>
 
         {/* SHARE */}
         <button
+          title="Compartir enlace de esta propiedad"
           onClick={handleShare}
           disabled={cards.length === 0}
           className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{
-            background: 'white',
-            boxShadow:  '0 4px 14px rgba(0,0,0,0.09)',
-          }}
+          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
         >
           <span className="text-[17px] leading-none" style={{ color: '#6B6B6B' }}>↗</span>
         </button>
 
         {/* LIKE */}
         <button
+          title="Me gusta esta propiedad"
           onClick={handleLike}
           disabled={cards.length === 0}
           className="w-[66px] h-[66px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"

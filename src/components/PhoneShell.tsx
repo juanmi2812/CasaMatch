@@ -9,11 +9,11 @@ interface Props {
   children: ReactNode
 }
 
-const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string }> = [
-  { id: 'feed',    icon: '⊞', label: 'Explorar'  },
-  { id: 'reels',   icon: '▷', label: 'Reels'      },
-  { id: 'saved',   icon: '🤍', label: 'Guardados' },
-  { id: 'advisor', icon: '👤', label: 'Asesor'    },
+const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string; title: string }> = [
+  { id: 'feed',    icon: '⊞', label: 'Explorar',  title: 'Explorar propiedades con swipe'    },
+  { id: 'reels',   icon: '▷', label: 'Reels',     title: 'Ver Reels de videos de propiedades' },
+  { id: 'saved',   icon: '🤍', label: 'Guardados', title: 'Ver propiedades guardadas'          },
+  { id: 'advisor', icon: '👤', label: 'Asesor',    title: 'Acceder a tu panel de asesor'      },
 ]
 
 const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin', 'profile']
@@ -70,13 +70,14 @@ export default function PhoneShell({ screen, onNavigate, children }: Props) {
             "
             style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}
           >
-            {NAV_ITEMS.map(({ id, icon, label }) => {
+            {NAV_ITEMS.map(({ id, icon, label, title }) => {
               const active = id === 'advisor'
                 ? screen === 'advisor' || screen === 'admin' || screen === 'profile'
                 : screen === id
               return (
                 <button
                   key={id}
+                  title={title}
                   onClick={() => onNavigate(id)}
                   className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl border-none bg-transparent cursor-pointer transition-all active:bg-sand-dark"
                 >
