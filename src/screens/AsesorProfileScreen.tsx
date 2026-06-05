@@ -7,14 +7,15 @@ interface Props {
 }
 
 interface AsesorData {
-  id:               string
-  nombre:           string
-  agencia:          string | null
-  avatar_url:       string | null
-  telefono:         string | null
-  biografia:        string | null
-  instagram_url:    string | null
-  tiktok_url:       string | null
+  id:                string
+  nombre:            string
+  agencia:           string | null
+  avatar_url:        string | null
+  telefono:          string | null
+  biografia:         string | null
+  instagram_url:     string | null
+  tiktok_url:        string | null
+  facebook_url:      string | null
   anios_experiencia: number | null
 }
 
@@ -54,7 +55,7 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from('perfiles')
-        .select('id, nombre, agencia, avatar_url, telefono, biografia, instagram_url, tiktok_url, anios_experiencia')
+        .select('id, nombre, agencia, avatar_url, telefono, biografia, instagram_url, tiktok_url, facebook_url, anios_experiencia')
         .eq('id', asesorId)
         .single(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,28 +138,27 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           </div>
 
           {/* Social links */}
-          {(asesor?.instagram_url || asesor?.tiktok_url) && (
-            <div className="flex gap-2">
+          {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
+            <div className="flex flex-wrap gap-2 justify-center">
               {asesor.instagram_url && (
-                <a
-                  href={asesor.instagram_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                  style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}
-                >
+                  style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}>
                   📸 Instagram
                 </a>
               )}
               {asesor.tiktok_url && (
-                <a
-                  href={asesor.tiktok_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={asesor.tiktok_url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                  style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}
-                >
+                  style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}>
                   🎵 TikTok
+                </a>
+              )}
+              {asesor.facebook_url && (
+                <a href={asesor.facebook_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                  style={{ background: 'rgba(24,119,242,0.20)', color: '#90B8F8', textDecoration: 'none' }}>
+                  👤 Facebook
                 </a>
               )}
             </div>

@@ -52,6 +52,7 @@ export interface Perfil {
   biografia?:         string | null
   instagram_url?:     string | null
   tiktok_url?:        string | null
+  facebook_url?:      string | null
   anios_experiencia?: number | null
   creado_en:          string
   actualizado_en:     string
@@ -161,7 +162,7 @@ export type InteraccionSwipeInsert =
 // =============================================================
 
 export type PerfilUpdate =
-  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'agencia' | 'rol'>>
+  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'agencia' | 'rol' | 'biografia' | 'instagram_url' | 'tiktok_url' | 'facebook_url' | 'anios_experiencia'>>
 
 export type PreferenciaOnboardingUpdate =
   Partial<Omit<PreferenciaOnboarding, 'id' | 'usuario_id' | 'creado_en' | 'actualizado_en'>>
