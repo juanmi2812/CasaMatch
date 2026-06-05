@@ -13,7 +13,7 @@ const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string; title: string 
   { id: 'feed',    icon: '⊞', label: 'Explorar',  title: 'Explorar propiedades con swipe'    },
   { id: 'reels',   icon: '▷', label: 'Reels',     title: 'Ver Reels de videos de propiedades' },
   { id: 'saved',   icon: '🤍', label: 'Guardados', title: 'Ver propiedades guardadas'          },
-  { id: 'advisor', icon: '👤', label: 'Asesor',    title: 'Acceder a tu panel de asesor'      },
+  { id: 'advisor', icon: '👤', label: 'Perfil',    title: 'Acceder a tu panel de asesor'      },
 ]
 
 const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin', 'profile', 'asesor-perfil']

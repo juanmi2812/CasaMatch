@@ -193,22 +193,30 @@ export default function AdvisorSettingsModal({ perfil, onSaved, onDismiss }: Pro
                 </div>
               )}
             </div>
-            <label
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold cursor-pointer transition-all active:scale-[.95]"
-              style={{
-                background: avatarUploading ? 'rgba(0,0,0,0.06)' : 'rgba(194,113,79,0.10)',
-                color:      avatarUploading ? '#9B9B9B' : '#C2714F',
-              }}
-            >
-              {avatarUploading ? 'Subiendo...' : '📷 Cambiar foto'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={avatarUploading}
-                onChange={handleAvatarChange}
-              />
-            </label>
+            {avatarUploading ? (
+              <span className="text-[12px] font-semibold px-4 py-2 rounded-full" style={{ background: 'rgba(0,0,0,0.06)', color: '#9B9B9B' }}>
+                Subiendo...
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                {/* Opción A: cámara frontal */}
+                <label
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold cursor-pointer transition-all active:scale-[.95]"
+                  style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                >
+                  📷 Tomar foto
+                  <input type="file" accept="image/*" capture="user" className="hidden" onChange={handleAvatarChange} />
+                </label>
+                {/* Opción B: galería */}
+                <label
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold cursor-pointer transition-all active:scale-[.95]"
+                  style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                >
+                  🖼 Galería
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
+              </div>
+            )}
           </div>
 
           {/* URL fallback */}
