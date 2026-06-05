@@ -95,14 +95,14 @@ export async function recordSwipe(
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('interacciones_swipes')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert({
+    .upsert({
       usuario_id:       session.user.id,
       propiedad_id:     propertyId,
       tipo_interaccion: action,
-    } as any)
+    }, { onConflict: 'usuario_id,propiedad_id' })
 
   if (error) console.error('[recordSwipe]', error.message)
 }

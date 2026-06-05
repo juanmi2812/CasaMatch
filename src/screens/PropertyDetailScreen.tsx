@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import type { PropiedadMock } from '../services/mockData'
 
 interface Props {
@@ -38,21 +39,126 @@ function initials(name: string): string {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
+// ─── ScheduleModal ────────────────────────────────────────────────────────────
+
+interface ScheduleModalProps {
+  property:  PropiedadMock
+  asesorId:  string
+  clientId:  string
+  onDismiss: () => void
+}
+
+function ScheduleModal({ property, asesorId, clientId, onDismiss }: ScheduleModalProps) {
+  const minDate = new Date()
+  minDate.setDate(minDate.getDate() + 1)
+  const minStr  = minDate.toISOString().slice(0, 16)
+
+  const [fecha,   setFecha]   = useState('')
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+
+  async function handleConfirm() {
+    if (!fecha) { setError('Selecciona una fecha y hora.'); return }
+    setSaving(true)
+    setError(null)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: err } = await (supabase as any).from('citas').insert({
+      cliente_id:   clientId,
+      asesor_id:    asesorId,
+      propiedad_id: property.id,
+      fecha_cita:   new Date(fecha).toISOString(),
+      estado:       'pendiente',
+    })
+
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    alert('¡Cita agendada! El asesor la confirmará pronto.')
+    onDismiss()
+  }
+
+  return (
+    <>
+      <motion.div
+        className="fixed inset-0 z-[300]"
+        style={{ background: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(4px)' }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onDismiss}
+      />
+      <motion.div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[301] rounded-t-[28px] px-6 pt-5 pb-10"
+        style={{ background: '#FDFAF6' }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#D8C9BB' }} />
+
+        <h2 className="font-display text-[20px] font-bold mb-1" style={{ color: '#1A1A1A' }}>
+          Agendar visita
+        </h2>
+        <p className="text-[13px] mb-5" style={{ color: '#9B9B9B' }}>
+          {property.titulo}
+        </p>
+
+        <label className="block text-[12px] font-semibold mb-2" style={{ color: '#6B6B6B' }}>
+          Fecha y hora *
+        </label>
+        <input
+          type="datetime-local"
+          min={minStr}
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full px-4 py-3 rounded-[14px] text-[14px] border-none outline-none mb-4"
+          style={{ background: '#F0EAE1', color: '#1A1A1A' }}
+        />
+
+        {error && (
+          <p className="text-[12px] mb-3 px-3 py-2 rounded-[10px]" style={{ background: 'rgba(220,38,38,0.08)', color: '#DC2626' }}>
+            {error}
+          </p>
+        )}
+
+        <button
+          onClick={handleConfirm}
+          disabled={saving}
+          className="w-full py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+        >
+          {saving ? 'Agendando…' : 'Confirmar cita'}
+        </button>
+
+        <button
+          onClick={onDismiss}
+          className="w-full mt-3 text-[13px] cursor-pointer bg-transparent border-none py-1 text-center"
+          style={{ color: '#9B9B9B' }}
+        >
+          Cancelar
+        </button>
+      </motion.div>
+    </>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function PropertyDetailScreen({ property, onBack }: Props) {
+  const { session }                 = useAuth()
   const [galleryIdx, setGalleryIdx] = useState(0)
   const [asesor,     setAsesor]     = useState<AsesorInfo | null>(null)
+  const [showSched,  setShowSched]  = useState(false)
   const pointerStart                = useRef(0)
 
   useEffect(() => {
     if (!property.asesorId) return
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(supabase as any)
+    supabase
       .from('perfiles')
-      .select('nombre,telefono,avatar_url,agencia')
+      .select('nombre, telefono, avatar_url, agencia')
       .eq('id', property.asesorId)
       .single()
-      .then(({ data }: { data: AsesorInfo | null }) => {
-        if (data) setAsesor(data)
+      .then(({ data, error }) => {
+        if (error) { console.error('[asesor fetch]', error.message); return }
+        if (data) setAsesor(data as AsesorInfo)
       })
   }, [property.asesorId])
 
@@ -67,14 +173,17 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         ]
 
   const GALLERY_COUNT = slides.length
+  const asesorName    = asesor?.nombre ?? '—'
 
-  const asesorName = asesor?.nombre ?? 'Asesor'
-  const waLink     = asesor?.telefono
-    ? `https://wa.me/${asesor.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! Estoy interesado en tu propiedad: ${property.titulo}`)}`
-    : null
+  function handleWhatsApp() {
+    if (!asesor?.telefono) return
+    const num  = asesor.telefono.replace(/\D/g, '')
+    const text = encodeURIComponent(`Hola! Estoy interesado en tu propiedad: ${property.titulo}`)
+    window.open(`https://wa.me/${num}?text=${text}`, '_blank')
+  }
 
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-white" style={{ minHeight: '100%' }}>
 
       {/* ── Gallery ────────────────────────────────────────────── */}
       <div
@@ -126,11 +235,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         <div className="absolute top-5 right-4 z-10">
           <div
             className="px-3 py-1.5 rounded-full text-white text-[12px] font-bold"
-            style={{
-              background:     'rgba(255,255,255,0.18)',
-              backdropFilter: 'blur(12px)',
-              border:         '1px solid rgba(255,255,255,0.28)',
-            }}
+            style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.28)' }}
           >
             ✦ {property.compatibilidad}% match
           </div>
@@ -143,10 +248,8 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
               onClick={() => setGalleryIdx(i)}
               className="border-none cursor-pointer p-0 transition-all"
               style={{
-                width:        i === galleryIdx ? 20 : 6,
-                height:       6,
-                borderRadius: 3,
-                background:   i === galleryIdx ? 'white' : 'rgba(255,255,255,0.45)',
+                width: i === galleryIdx ? 20 : 6, height: 6, borderRadius: 3,
+                background: i === galleryIdx ? 'white' : 'rgba(255,255,255,0.45)',
               }}
             />
           ))}
@@ -156,81 +259,55 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
       {/* ── Header info ────────────────────────────────────────── */}
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-start gap-3 mb-1">
-          <h1
-            className="font-display text-[22px] font-bold leading-[1.2] flex-1"
-            style={{ color: '#1A1A1A' }}
-          >
+          <h1 className="font-display text-[22px] font-bold leading-[1.2] flex-1" style={{ color: '#1A1A1A' }}>
             {property.titulo}
           </h1>
           <p className="font-display text-[20px] font-bold flex-shrink-0" style={{ color: '#C2714F' }}>
             {formatPrice(property.precio)}
           </p>
         </div>
-        <p className="text-[13px] mb-4" style={{ color: '#6B6B6B' }}>
-          📍 {property.ubicacion}
-        </p>
+        <p className="text-[13px] mb-4" style={{ color: '#6B6B6B' }}>📍 {property.ubicacion}</p>
 
         <div className="flex flex-wrap gap-1.5 mb-5">
           {property.tags.map((tag) => (
             <span
               key={tag}
               className="px-3 py-1 rounded-full text-[11px] font-medium"
-              style={{
-                background: 'rgba(194,113,79,0.08)',
-                color:      '#C2714F',
-                border:     '1px solid rgba(194,113,79,0.20)',
-              }}
+              style={{ background: 'rgba(194,113,79,0.08)', color: '#C2714F', border: '1px solid rgba(194,113,79,0.20)' }}
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <div
-          className="flex rounded-[20px] p-4"
-          style={{ background: '#F5EFE6', border: '1px solid rgba(194,113,79,0.12)' }}
-        >
+        <div className="flex rounded-[20px] p-4" style={{ background: '#F5EFE6', border: '1px solid rgba(194,113,79,0.12)' }}>
           {[
             { icon: '📐', value: `${property.m2}`,        unit: 'm²'   },
             { icon: '🛏', value: `${property.recamaras}`, unit: 'rec.' },
             { icon: '🚿', value: `${property.banos}`,     unit: 'baños'},
           ].map((spec, i) => (
-            <div
-              key={spec.unit}
-              className="flex-1 text-center"
-              style={i > 0 ? { borderLeft: '1px solid rgba(194,113,79,0.15)' } : {}}
-            >
+            <div key={spec.unit} className="flex-1 text-center" style={i > 0 ? { borderLeft: '1px solid rgba(194,113,79,0.15)' } : {}}>
               <span className="text-[18px] block mb-0.5">{spec.icon}</span>
-              <span className="font-display text-[20px] font-bold block" style={{ color: '#1A1A1A' }}>
-                {spec.value}
-              </span>
+              <span className="font-display text-[20px] font-bold block" style={{ color: '#1A1A1A' }}>{spec.value}</span>
               <span className="text-[11px]" style={{ color: '#6B6B6B' }}>{spec.unit}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Lifestyle section ──────────────────────────────────── */}
-      <div
-        className="mx-5 rounded-[24px] p-5 mb-5"
-        style={{ background: 'linear-gradient(140deg, #1A1A1A 0%, #2C2C3E 100%)' }}
-      >
-        <h2 className="font-display text-[18px] font-bold text-white mb-0.5">
-          Cómo se siente vivir aquí
-        </h2>
-        <p className="text-[12px] mb-5" style={{ color: 'rgba(255,255,255,0.48)' }}>
-          Basado en datos del vecindario
-        </p>
+      {/* ── Lifestyle ──────────────────────────────────────────── */}
+      <div className="mx-5 rounded-[24px] p-5 mb-5" style={{ background: 'linear-gradient(140deg, #1A1A1A 0%, #2C2C3E 100%)' }}>
+        <h2 className="font-display text-[18px] font-bold text-white mb-0.5">Cómo se siente vivir aquí</h2>
+        <p className="text-[12px] mb-5" style={{ color: 'rgba(255,255,255,0.48)' }}>Basado en datos del vecindario</p>
 
         <div className="flex flex-col gap-4">
           {LIFESTYLE_BARS.map(({ key, label, icon }, idx) => {
-            const raw   = property.caracteristicas[key as LifestyleKey] as number
-            const pct   = (raw / 5) * 100
+            const raw  = property.caracteristicas[key as LifestyleKey] as number
+            const pct  = (raw / 5) * 100
             const color = pct >= 70 ? '#4ADE80' : pct >= 40 ? '#FBD249' : '#F87171'
             const grad  = pct >= 70
               ? 'linear-gradient(90deg, #4ADE80, #22C55E)'
-              : pct >= 40
-              ? 'linear-gradient(90deg, #FBD249, #F59E0B)'
+              : pct >= 40 ? 'linear-gradient(90deg, #FBD249, #F59E0B)'
               : 'linear-gradient(90deg, #F87171, #EF4444)'
             return (
               <div key={key}>
@@ -255,37 +332,30 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         {(property.caracteristicas.pet_friendly || property.caracteristicas.familias || property.caracteristicas.home_office) && (
           <div className="flex flex-wrap gap-2 mt-5">
             {property.caracteristicas.pet_friendly && (
-              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                🐾 Pet friendly
-              </span>
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>🐾 Pet friendly</span>
             )}
             {property.caracteristicas.familias && (
-              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                👨‍👩‍👧 Zona familiar
-              </span>
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>👨‍👩‍👧 Zona familiar</span>
             )}
             {property.caracteristicas.home_office && (
-              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                💻 Home office
-              </span>
+              <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>💻 Home office</span>
             )}
           </div>
         )}
       </div>
 
-      {/* ── Asesor ─────────────────────────────────────────────── */}
+      {/* ── Asesor card ─────────────────────────────────────────── */}
       <div
-        className="mx-5 rounded-[24px] p-5 mb-8"
-        style={{
-          background: 'white',
-          border:     '1.5px solid #EDE4D7',
-          boxShadow:  '0 4px 20px rgba(0,0,0,0.05)',
-        }}
+        className="mx-5 rounded-[24px] p-5 pb-24"
+        style={{ background: 'white', border: '1.5px solid #EDE4D7', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}
       >
-        <div className="flex items-center gap-3 mb-4">
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#C2714F' }}>
+          Tu asesor asignado
+        </p>
+        <div className="flex items-center gap-3">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-display text-[16px] font-bold text-white overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)', flexShrink: 0 }}
+            style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
           >
             {asesor?.avatar_url ? (
               <img src={asesor.avatar_url} alt={asesorName} className="w-full h-full object-cover" />
@@ -295,44 +365,56 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-[15px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
-                {asesorName}
-              </p>
-              <span
-                className="px-1.5 py-[2px] rounded text-[9px] font-black flex-shrink-0 tracking-[0.4px]"
-                style={{ background: '#C2714F', color: 'white' }}
-              >
+              <p className="text-[15px] font-semibold truncate" style={{ color: '#1A1A1A' }}>{asesorName}</p>
+              <span className="px-1.5 py-[2px] rounded text-[9px] font-black flex-shrink-0 tracking-[0.4px]" style={{ background: '#C2714F', color: 'white' }}>
                 ✓ VERIFICADO
               </span>
             </div>
             <p className="text-[12px]" style={{ color: '#6B6B6B' }}>
               {asesor?.agencia ?? 'Asesor inmobiliario'}
             </p>
+            {asesor?.telefono && (
+              <p className="text-[11px]" style={{ color: '#9B9B9B' }}>📱 {asesor.telefono}</p>
+            )}
           </div>
-        </div>
-
-        <div className="flex gap-2.5">
-          {waLink ? (
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-[13px] rounded-[16px] text-[14px] font-semibold text-white text-center no-underline transition-all active:scale-[.97]"
-              style={{ background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              💬 WhatsApp
-            </a>
-          ) : (
-            <button
-              className="flex-1 py-[13px] rounded-[16px] text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
-              style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
-            >
-              💬 Contactar asesor
-            </button>
-          )}
         </div>
       </div>
 
+      {/* ── Sticky bottom action bar ────────────────────────────── */}
+      <div
+        className="sticky bottom-0 left-0 right-0 flex gap-3 px-5 py-4"
+        style={{ background: 'rgba(253,250,246,0.96)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE4D7' }}
+      >
+        <button
+          onClick={handleWhatsApp}
+          disabled={!asesor?.telefono}
+          className="flex-1 py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
+          style={{ background: '#25D366' }}
+        >
+          💬 Contactar asesor
+        </button>
+
+        <button
+          onClick={() => setShowSched(true)}
+          disabled={!session?.user || !property.asesorId}
+          className="flex-1 py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+        >
+          📅 Agendar cita
+        </button>
+      </div>
+
+      {/* ── ScheduleModal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {showSched && session?.user && property.asesorId && (
+          <ScheduleModal
+            property={property}
+            asesorId={property.asesorId}
+            clientId={session.user.id}
+            onDismiss={() => setShowSched(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

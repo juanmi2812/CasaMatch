@@ -341,15 +341,16 @@ export default function AdvisorDashboard() {
                         className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
                         style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
                       >
-                        WA
+                        WhatsApp
                       </a>
                     ) : (
-                      <span
-                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                      <button
+                        onClick={() => alert(`No hay número de teléfono registrado para ${lead.usuario?.nombre ?? 'este usuario'}.`)}
+                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border-none cursor-pointer"
                         style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
                       >
-                        Contactar
-                      </span>
+                        Sin tel.
+                      </button>
                     )}
                   </div>
                 </div>

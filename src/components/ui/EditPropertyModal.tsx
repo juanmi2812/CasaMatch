@@ -187,9 +187,8 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Describe la propiedad…"
-            rows={4}
-            className={`${FIELD_CLASS} resize-none leading-relaxed`}
-            style={FIELD_STYLE}
+            className="w-full min-h-[120px] p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-[14px] resize-y leading-relaxed"
+            style={{ borderColor: '#EDE4D7', background: '#F0EAE1', color: '#1A1A1A' }}
           />
 
           <SectionLabel>Estatus</SectionLabel>
