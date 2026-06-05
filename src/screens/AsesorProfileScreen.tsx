@@ -92,7 +92,7 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           <span className="text-white text-[16px] font-bold leading-none">←</span>
         </button>
 
-        <div className="flex flex-col items-center px-6 pt-14 pb-8">
+        <div className="flex flex-col items-center px-6 pt-14 pb-10">
           {/* Avatar */}
           <div
             className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white mb-4 flex-shrink-0"
@@ -109,10 +109,10 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           </div>
 
           {/* Name */}
-          <h1 className="font-display text-[22px] font-bold text-white text-center mb-1">{name}</h1>
+          <h1 className="font-display text-[22px] font-bold text-white text-center mb-2">{name}</h1>
 
-          {/* Agency + experience badges */}
-          <div className="flex items-center gap-2 flex-wrap justify-center mb-4">
+          {/* Agency + experience + verified badges */}
+          <div className="flex flex-wrap justify-center items-center gap-2 mt-2 mb-4 w-full">
             {asesor?.agencia && (
               <span
                 className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
