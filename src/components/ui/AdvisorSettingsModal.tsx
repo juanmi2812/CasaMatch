@@ -76,19 +76,21 @@ export default function AdvisorSettingsModal({ perfil, onSaved, onDismiss }: Pro
     if (!file) return
     setAvatarUploading(true)
     setError(null)
-    const ext  = file.name.split('.').pop() ?? 'jpg'
-    const path = `${perfil.id}/${Date.now()}.${ext}`
-    const { data, error: upErr } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true })
-    if (upErr) {
-      setError(`Error al subir imagen: ${upErr.message}`)
+    try {
+      const ext  = file.name.split('.').pop() ?? 'jpg'
+      const path = `${perfil.id}/${Date.now()}.${ext}`
+      const { data, error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true })
+      if (upErr) throw new Error(upErr.message)
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path)
+      setAvatarUrl(urlData.publicUrl)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      alert(`Error al subir imagen: ${msg}`)
+    } finally {
       setAvatarUploading(false)
-      return
     }
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path)
-    setAvatarUrl(urlData.publicUrl)
-    setAvatarUploading(false)
   }
 
   async function handleSave() {
@@ -202,13 +204,27 @@ export default function AdvisorSettingsModal({ perfil, onSaved, onDismiss }: Pro
               <input
                 type="file"
                 accept="image/*"
-                capture="user"
                 className="hidden"
                 disabled={avatarUploading}
                 onChange={handleAvatarChange}
               />
             </label>
           </div>
+
+          {/* URL fallback */}
+          <div className="flex items-center gap-2 w-full mt-3">
+            <div className="flex-1 h-px" style={{ background: '#EDE4D7' }} />
+            <span className="text-[10px] flex-shrink-0" style={{ color: '#9B9B9B' }}>O pega una URL:</span>
+            <div className="flex-1 h-px" style={{ background: '#EDE4D7' }} />
+          </div>
+          <input
+            type="text"
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="https://imagen.com/foto.jpg"
+            className={`${I_CLASS} mt-2 text-[13px]`}
+            style={I_STYLE}
+          />
 
           {/* ── Información básica ──────────────────────────────── */}
           <SectionLabel>Información básica</SectionLabel>

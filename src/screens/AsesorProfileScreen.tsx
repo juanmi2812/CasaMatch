@@ -80,8 +80,13 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
 
       {/* ── Hero card ────────────────────────────────────────────── */}
       <div
-        className="relative mx-4 mt-4 rounded-[28px] overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #1A1A1A 0%, #2C2C3E 100%)', boxShadow: '0 12px 40px rgba(0,0,0,0.22)' }}
+        className="relative mx-4 mt-4 rounded-[28px]"
+        style={{
+          background:  'linear-gradient(160deg, #1A1A1A 0%, #2C2C3E 100%)',
+          boxShadow:   '0 12px 40px rgba(0,0,0,0.22)',
+          minHeight:   350,
+          overflow:    'hidden',
+        }}
       >
         {/* Back button */}
         <button
@@ -92,13 +97,14 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           <span className="text-white text-[16px] font-bold leading-none">←</span>
         </button>
 
-        <div className="flex flex-col items-center px-6 pt-14 pb-10">
+        {/* Content — grows to fit all children, never clips */}
+        <div className="flex flex-col items-center justify-center gap-2 relative z-10 w-full pt-14 pb-8 px-6">
           {/* Avatar */}
           <div
-            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white mb-4 flex-shrink-0"
+            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white flex-shrink-0"
             style={{
               background: asesor?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #E8A98A, #C2714F)',
-              boxShadow: '0 0 0 4px rgba(255,255,255,0.14)',
+              boxShadow:  '0 0 0 4px rgba(255,255,255,0.14)',
             }}
           >
             {loading ? '…' : asesor?.avatar_url ? (
@@ -109,10 +115,12 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
           </div>
 
           {/* Name */}
-          <h1 className="font-display text-[22px] font-bold text-white text-center mb-2">{name}</h1>
+          <h1 className="font-display text-[22px] font-bold text-white text-center leading-tight mt-2">
+            {name}
+          </h1>
 
           {/* Agency + experience + verified badges */}
-          <div className="flex flex-wrap justify-center items-center gap-2 mt-2 mb-4 w-full">
+          <div className="flex flex-wrap justify-center items-center gap-2 w-full">
             {asesor?.agencia && (
               <span
                 className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
@@ -139,7 +147,7 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
 
           {/* Social links */}
           {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center mt-1">
               {asesor.instagram_url && (
                 <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
@@ -191,7 +199,7 @@ export default function AsesorProfileScreen({ asesorId, onBack }: Props) {
 
           {/* ── Contact button ─────────────────────────────────────── */}
           {asesor?.telefono && (
-            <div className="mx-4 mt-4">
+            <div className="mx-4 mt-6">
               <a
                 href={`https://wa.me/${asesor.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${name}, encontré tu perfil en CasaMatch y me gustaría hablar contigo.`)}`}
                 target="_blank"
