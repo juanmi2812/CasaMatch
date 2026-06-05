@@ -2,18 +2,6 @@ import { supabase } from '../lib/supabaseClient'
 import type { CaracteristicasLifestyle, Propiedad, TipoInteraccion, TipoPropiedad } from '../types/database'
 import type { PropiedadMock } from './mockData'
 
-const DEFAULT_LIFESTYLE: CaracteristicasLifestyle = {
-  seguridad:          3,
-  trafico:            3,
-  vida_social:        3,
-  tranquilidad:       3,
-  plusvalia:          3,
-  servicios_cercanos: 3,
-  pet_friendly:       false,
-  familias:           false,
-  home_office:        false,
-}
-
 // ─── Gradient + emoji fallbacks per property type ────────────────────────────
 
 const TIPO_GRADIENTS: Record<TipoPropiedad, [string, string]> = {
@@ -35,7 +23,32 @@ const TIPO_EMOJIS: Record<TipoPropiedad, string> = {
 // ─── Map DB row → PropiedadMock ───────────────────────────────────────────────
 
 export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
-  const c    = (p.caracteristicas_lifestyle as CaracteristicasLifestyle | null | undefined) ?? DEFAULT_LIFESTYLE
+  // Try both JSONB columns; prefer `caracteristicas` (alt name some DBs use)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cL   = (p.caracteristicas_lifestyle as Record<string, any> | null | undefined) ?? {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cA   = (p.caracteristicas           as Record<string, any> | null | undefined) ?? {}
+
+  const pick = (keyL: string, keyA?: string, fallback = 3): number => {
+    const fromA = cA[keyA ?? keyL]
+    const fromL = cL[keyL]
+    if (fromA != null && fromA > 0) return Number(fromA)
+    if (fromL != null && fromL > 0) return Number(fromL)
+    return fallback
+  }
+
+  const c: CaracteristicasLifestyle = {
+    seguridad:          pick('seguridad'),
+    trafico:            pick('trafico'),
+    vida_social:        pick('vida_social'),
+    tranquilidad:       pick('tranquilidad'),
+    plusvalia:          pick('plusvalia'),
+    servicios_cercanos: pick('servicios_cercanos', 'servicios_cerca'),
+    pet_friendly:       Boolean(cA.pet_friendly ?? cL.pet_friendly ?? false),
+    familias:           Boolean(cA.familias      ?? cL.familias      ?? false),
+    home_office:        Boolean(cA.home_office   ?? cL.home_office   ?? false),
+  }
+
   const nums = [c.seguridad, c.trafico, c.vida_social, c.tranquilidad, c.plusvalia, c.servicios_cercanos]
   const compatibilidad = Math.round((nums.reduce((a, b) => a + b, 0) / (nums.length * 5)) * 100)
 
@@ -82,7 +95,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<Prop
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase
     .from('propiedades')
-    .select('id, asesor_id, titulo, descripcion, tipo, precio, ciudad, ubicacion, recamaras, banos, estacionamientos, m2, caracteristicas_lifestyle, url_video, imagenes, activa, destacada, creado_en, actualizado_en')
+    .select('id, asesor_id, titulo, descripcion, tipo, precio, ciudad, ubicacion, recamaras, banos, estacionamientos, m2, caracteristicas_lifestyle, caracteristicas, url_video, imagenes, activa, destacada, creado_en, actualizado_en')
     .eq('activa', true)
     .order('creado_en', { ascending: false })
 

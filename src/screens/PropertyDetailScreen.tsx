@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import type { PropiedadMock } from '../services/mockData'
@@ -191,22 +191,21 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         <p className="text-[12px] mb-5" style={{ color: 'rgba(255,255,255,0.48)' }}>Basado en datos del vecindario</p>
 
         {(() => {
-          // Double-layer fallback: object may be null/partial from DB
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const datosZona: Record<string, any> = property.caracteristicas || {}
+          const c = property.caracteristicas
+          console.log('Data de características:', c)
 
           const BARS = [
-            { key: 'seguridad',          val: Number(datosZona.seguridad          || 0), label: 'Seguridad',       icon: '🔐' },
-            { key: 'trafico',            val: Number(datosZona.trafico            || 0), label: 'Sin tráfico',     icon: '🚗' },
-            { key: 'vida_social',        val: Number(datosZona.vida_social        || 0), label: 'Vida social',     icon: '🍕' },
-            { key: 'tranquilidad',       val: Number(datosZona.tranquilidad       || 0), label: 'Tranquilidad',    icon: '🤫' },
-            { key: 'plusvalia',          val: Number(datosZona.plusvalia          || 0), label: 'Plusvalía',       icon: '📈' },
-            { key: 'servicios_cercanos', val: Number(datosZona.servicios_cercanos || datosZona.servicios_cerca || 0), label: 'Servicios cerca', icon: '🏪' },
+            { key: 'seguridad',          val: c?.seguridad          || 0, label: 'Seguridad',       icon: '🔐' },
+            { key: 'trafico',            val: c?.trafico            || 0, label: 'Sin tráfico',     icon: '🚗' },
+            { key: 'vida_social',        val: c?.vida_social        || 0, label: 'Vida social',     icon: '🍕' },
+            { key: 'tranquilidad',       val: c?.tranquilidad       || 0, label: 'Tranquilidad',    icon: '🤫' },
+            { key: 'plusvalia',          val: c?.plusvalia          || 0, label: 'Plusvalía',       icon: '📈' },
+            { key: 'servicios_cercanos', val: c?.servicios_cercanos || 0, label: 'Servicios cerca', icon: '🏪' },
           ]
 
           return (
             <div className="flex flex-col gap-4">
-              {BARS.map(({ key, val, label, icon }, idx) => {
+              {BARS.map(({ key, val, label, icon }) => {
                 const pct   = Math.min(((val / 5) * 100), 100)
                 const color = pct >= 70 ? '#4ADE80' : pct >= 40 ? '#FBD249' : '#F87171'
                 const grad  = pct >= 70
@@ -220,12 +219,9 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
                       <span className="text-[12px] font-bold" style={{ color }}>{val}/5</span>
                     </div>
                     <div className="h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
-                      <motion.div
+                      <div
                         className="h-full rounded-full"
-                        style={{ background: grad, width: `${pct}%` }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.75, delay: idx * 0.07, ease: [0.4, 0, 0.2, 1] }}
+                        style={{ background: grad, width: `${((val / 5) * 100)}%`, transition: 'width 0.75s cubic-bezier(0.4,0,0.2,1)' }}
                       />
                     </div>
                   </div>

@@ -106,6 +106,18 @@ export interface Propiedad {
   estacionamientos:          number | null
   m2:                        number | null
   caracteristicas_lifestyle: CaracteristicasLifestyle
+  caracteristicas?: {
+    seguridad?:          number
+    trafico?:            number
+    vida_social?:        number
+    tranquilidad?:       number
+    plusvalia?:          number
+    servicios_cerca?:    number
+    servicios_cercanos?: number
+    pet_friendly?:       boolean
+    familias?:           boolean
+    home_office?:        boolean
+  }
   url_video:                 string | null
   imagenes:                  string[]
   activa:                    boolean
