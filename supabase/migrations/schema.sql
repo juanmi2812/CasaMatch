@@ -28,6 +28,7 @@ CREATE TABLE perfiles (
   nombre         TEXT        NOT NULL,
   telefono       TEXT,
   avatar_url     TEXT,
+  agencia        TEXT,
   rol            rol_usuario NOT NULL DEFAULT 'usuario',
   creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()

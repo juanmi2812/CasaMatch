@@ -47,6 +47,7 @@ export interface Perfil {
   nombre:         string
   telefono:       string | null
   avatar_url:     string | null
+  agencia:        string | null
   rol:            RolUsuario
   creado_en:      string
   actualizado_en: string
@@ -126,7 +127,7 @@ export interface InteraccionSwipe {
 // =============================================================
 
 export type PerfilInsert = Pick<Perfil, 'id' | 'nombre'> &
-  Partial<Pick<Perfil, 'telefono' | 'avatar_url' | 'rol'>>
+  Partial<Pick<Perfil, 'telefono' | 'avatar_url' | 'agencia' | 'rol'>>
 
 export type PreferenciaOnboardingInsert =
   Pick<PreferenciaOnboarding, 'usuario_id' | 'tipo_operacion' | 'ciudad'> &
@@ -144,7 +145,7 @@ export type InteraccionSwipeInsert =
 // =============================================================
 
 export type PerfilUpdate =
-  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'rol'>>
+  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'agencia' | 'rol'>>
 
 export type PreferenciaOnboardingUpdate =
   Partial<Omit<PreferenciaOnboarding, 'id' | 'usuario_id' | 'creado_en' | 'actualizado_en'>>

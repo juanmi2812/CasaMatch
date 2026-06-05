@@ -2,53 +2,84 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AIGeneratorModal from '../components/ui/AIGeneratorModal'
 import NewPropertyModal from '../components/ui/NewPropertyModal'
+import AdvisorSettingsModal from '../components/ui/AdvisorSettingsModal'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
-import type { KpisAsesor } from '../types/database'
+import type { KpisAsesor, Perfil } from '../types/database'
 
-// ─── Mock fallback data for leads / active properties ─────────────────────────
+// ─── Local types ──────────────────────────────────────────────────────────────
 
-interface Lead {
-  name:     string
-  property: string
-  time:     string
-  hot:      boolean
-  avatar:   string
+interface LeadRow {
+  id:               string
+  tipo_interaccion: string
+  creado_en:        string
+  usuario:   { nombre: string; avatar_url: string | null; telefono: string | null } | null
+  propiedad: { titulo: string; ciudad: string; tipo: string } | null
 }
 
-interface ActiveProperty {
-  titulo:    string
-  tipo:      string
-  vistas:    number
-  likes:     number
-  maxVistas: number
-  emoji:     string
-  gradient:  [string, string]
+interface PropRow {
+  id:       string
+  titulo:   string
+  tipo:     string
+  imagenes: string[]
+  precio:   number
 }
 
-const MOCK_LEADS: Lead[] = [
-  { name: 'Ana Martínez',  property: 'Juriquilla · Casa',      time: 'Hace 5 min',  hot: true,  avatar: '👩' },
-  { name: 'Luis Herrera',  property: 'Polanco · Loft',         time: 'Hace 18 min', hot: true,  avatar: '👨' },
-  { name: 'Sofía Ramos',   property: 'Campanario · Penthouse', time: 'Hace 1 h',    hot: false, avatar: '👩‍💼' },
-  { name: 'Carlos Medina', property: 'Chapultepec · PH',       time: 'Hace 2 h',    hot: false, avatar: '🧑' },
-]
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const MOCK_ACTIVE_PROPERTIES: ActiveProperty[] = [
-  { titulo: 'Juriquilla · Casa',    tipo: 'Casa',  vistas: 540, likes:  128, maxVistas: 600, emoji: '🏡', gradient: ['#C9A87C', '#6B7C5C'] },
-  { titulo: 'Polanco · Loft',       tipo: 'Depto', vistas: 380, likes:   94, maxVistas: 600, emoji: '🏙', gradient: ['#9B8EC4', '#C2714F'] },
-  { titulo: 'Campanario · Casa',    tipo: 'Casa',  vistas: 290, likes:   67, maxVistas: 600, emoji: '🌲', gradient: ['#7B9E87', '#4A7C6F'] },
-]
+function relativeTime(iso: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (mins < 60) return `Hace ${mins} min`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `Hace ${hrs} h`
+  return `Hace ${Math.floor(hrs / 24)} d`
+}
+
+function isHot(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() < 3_600_000
+}
+
+function fmtPrice(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+  }
+  return `$${(n / 1_000).toFixed(0)}k`
+}
+
+function initials(name: string): string {
+  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdvisorDashboard() {
-  const { session } = useAuth()
-  const [kpis,              setKpis]             = useState<KpisAsesor | null>(null)
-  const [kpisLoading,       setKpisLoading]      = useState(true)
-  const [kpisKey,           setKpisKey]          = useState(0)
-  const [showAIModal,       setShowAIModal]      = useState(false)
-  const [showNewPropModal,  setShowNewPropModal] = useState(false)
+  const { session, signOut } = useAuth()
 
+  const [perfil,           setPerfil]          = useState<Perfil | null>(null)
+  const [kpis,             setKpis]            = useState<KpisAsesor | null>(null)
+  const [leads,            setLeads]           = useState<LeadRow[]>([])
+  const [myProps,          setMyProps]         = useState<PropRow[]>([])
+  const [kpisLoading,      setKpisLoading]     = useState(true)
+  const [leadsLoading,     setLeadsLoading]    = useState(true)
+  const [propsLoading,     setPropsLoading]    = useState(true)
+  const [kpisKey,          setKpisKey]         = useState(0)
+  const [showAIModal,      setShowAIModal]     = useState(false)
+  const [showNewPropModal, setShowNewPropModal] = useState(false)
+  const [showSettings,     setShowSettings]    = useState(false)
+
+  // Fetch profile
+  useEffect(() => {
+    if (!session?.user) return
+    supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => { if (data) setPerfil(data as Perfil) })
+  }, [session])
+
+  // Fetch KPIs
   useEffect(() => {
     if (!session?.user) { setKpisLoading(false); return }
     setKpisLoading(true)
@@ -63,60 +94,114 @@ export default function AdvisorDashboard() {
       })
   }, [session, kpisKey])
 
+  // Fetch leads (RLS automatically scopes to this advisor's properties)
+  useEffect(() => {
+    if (!session?.user) { setLeadsLoading(false); return }
+    setLeadsLoading(true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(supabase as any)
+      .from('interacciones_swipes')
+      .select('id, tipo_interaccion, creado_en, usuario:perfiles!usuario_id(nombre,avatar_url,telefono), propiedad:propiedades!propiedad_id(titulo,ciudad,tipo)')
+      .in('tipo_interaccion', ['like', 'save'])
+      .order('creado_en', { ascending: false })
+      .limit(8)
+      .then(({ data }: { data: LeadRow[] | null }) => {
+        setLeads(data ?? [])
+        setLeadsLoading(false)
+      })
+  }, [session, kpisKey])
+
+  // Fetch advisor's own active properties
+  useEffect(() => {
+    if (!session?.user) { setPropsLoading(false); return }
+    setPropsLoading(true)
+    supabase
+      .from('propiedades')
+      .select('id,titulo,tipo,imagenes,precio')
+      .eq('asesor_id', session.user.id)
+      .eq('activa', true)
+      .order('creado_en', { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        setMyProps((data ?? []) as PropRow[])
+        setPropsLoading(false)
+      })
+  }, [session, kpisKey])
+
   const metrics = [
-    {
-      label: 'Propiedades',
-      value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(),
-      delta: '+activas', up: true, icon: '🏠',
-    },
-    {
-      label: 'Leads',
-      value: kpisLoading ? '—' : (kpis?.total_leads ?? 0).toLocaleString(),
-      delta: 'únicos', up: true, icon: '📩',
-    },
-    {
-      label: 'Likes',
-      value: kpisLoading ? '—' : (kpis?.total_likes ?? 0).toLocaleString(),
-      delta: 'total', up: true, icon: '♥',
-    },
-    {
-      label: 'Guardados',
-      value: kpisLoading ? '—' : (kpis?.total_saves ?? 0).toLocaleString(),
-      delta: 'total', up: true, icon: '🔖',
-    },
+    { label: 'Propiedades', value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(), delta: '+activas', icon: '🏠' },
+    { label: 'Leads',       value: kpisLoading ? '—' : (kpis?.total_leads       ?? 0).toLocaleString(), delta: 'únicos',  icon: '📩' },
+    { label: 'Likes',       value: kpisLoading ? '—' : (kpis?.total_likes       ?? 0).toLocaleString(), delta: 'total',   icon: '♥'  },
+    { label: 'Guardados',   value: kpisLoading ? '—' : (kpis?.total_saves       ?? 0).toLocaleString(), delta: 'total',   icon: '🔖' },
   ]
+
+  const displayName = perfil?.nombre || 'Asesor Inmobiliario'
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
 
-      {/* Header */}
-      <div className="px-5 pt-1 pb-4 flex items-center justify-between flex-shrink-0">
-        <div>
-          <p className="text-[12px] font-medium mb-0.5" style={{ color: '#9B9B9B' }}>Bienvenido de vuelta,</p>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
-              Marco Fernández
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="px-5 pt-3 pb-4 flex items-center justify-between flex-shrink-0">
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-medium mb-0.5" style={{ color: '#9B9B9B' }}>
+            Bienvenido de vuelta,
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-display text-[20px] font-bold truncate" style={{ color: '#1A1A1A' }}>
+              {displayName}
             </h1>
-            <div
-              className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
-            >
-              ✓ Pro
-            </div>
+            {perfil?.agencia && (
+              <div
+                className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+              >
+                {perfil.agencia}
+              </div>
+            )}
           </div>
         </div>
-        <div
-          className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-[20px]"
-          style={{
-            background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
-            boxShadow:  '0 4px 14px rgba(194,113,79,0.38)',
-          }}
-        >
-          🧑‍💼
+
+        {/* Avatar + settings + sign-out */}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          <button
+            onClick={() => signOut()}
+            className="text-[11px] px-2.5 py-1.5 rounded-full border-none cursor-pointer"
+            style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+          >
+            Salir
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="relative w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer overflow-hidden"
+            style={{
+              background: perfil?.avatar_url
+                ? 'transparent'
+                : 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
+              boxShadow: '0 4px 14px rgba(194,113,79,0.38)',
+            }}
+          >
+            {perfil?.avatar_url ? (
+              <img
+                src={perfil.avatar_url}
+                alt={displayName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-[15px] font-bold">
+                {initials(displayName)}
+              </span>
+            )}
+            <span
+              className="absolute bottom-0 right-0 text-[12px] w-[18px] h-[18px] rounded-full flex items-center justify-center"
+              style={{ background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
+            >
+              ⚙
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Metrics grid — from kpis_asesores view */}
+      {/* ── Metrics grid ───────────────────────────────────────── */}
       <div className="px-4 mb-5">
         <div className="grid grid-cols-2 gap-3">
           {metrics.map((m) => (
@@ -132,10 +217,7 @@ export default function AdvisorDashboard() {
                 <span className="text-[18px]">{m.icon}</span>
                 <span
                   className="text-[11px] font-semibold px-2 py-[2px] rounded-full"
-                  style={{
-                    background: m.up ? 'rgba(74,222,128,0.14)' : 'rgba(248,113,113,0.14)',
-                    color:      m.up ? '#16A34A'               : '#DC2626',
-                  }}
+                  style={{ background: 'rgba(74,222,128,0.14)', color: '#16A34A' }}
                 >
                   {m.delta}
                 </span>
@@ -149,59 +231,132 @@ export default function AdvisorDashboard() {
         </div>
       </div>
 
-      {/* Leads recientes */}
+      {/* ── Leads recientes ────────────────────────────────────── */}
       <div className="px-4 mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>Leads recientes</h2>
-          <button className="text-[12px] font-semibold" style={{ color: '#C2714F' }}>Ver todos</button>
+          <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>
+            Leads recientes
+          </h2>
         </div>
-        <div className="rounded-[20px] overflow-hidden" style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-          {MOCK_LEADS.map((lead, i) => (
-            <div
-              key={lead.name}
-              className="flex items-center gap-3 px-4 py-3"
-              style={{ borderBottom: i < MOCK_LEADS.length - 1 ? '1px solid #F0EAE1' : 'none' }}
+
+        {leadsLoading && (
+          <div className="flex justify-center py-8">
+            <span className="text-[28px] animate-pulse">📩</span>
+          </div>
+        )}
+
+        {!leadsLoading && leads.length === 0 && (
+          <div
+            className="rounded-[20px] p-6 flex flex-col items-center text-center gap-3"
+            style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+          >
+            <span className="text-[48px]">🏡</span>
+            <p className="font-display text-[16px] font-bold" style={{ color: '#1A1A1A' }}>
+              Aún no tienes leads
+            </p>
+            <p className="text-[13px] leading-[1.6]" style={{ color: '#9B9B9B' }}>
+              ¡Sube tu primera propiedad para empezar a recibir prospectos!
+            </p>
+            <button
+              onClick={() => setShowNewPropModal(true)}
+              className="mt-1 px-6 py-[11px] rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+              style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[18px]"
-                style={{ background: '#F5EFE6' }}
-              >
-                {lead.avatar}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>{lead.name}</p>
-                  <span className="text-[11px]">{lead.hot ? '🔥' : '🌡️'}</span>
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-[1px] rounded-full"
-                    style={{
-                      background: lead.hot ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)',
-                      color:      lead.hot ? '#DC2626'              : '#92400E',
-                    }}
-                  >
-                    {lead.hot ? 'Hot' : 'Warm'}
-                  </span>
-                </div>
-                <p className="text-[11px] truncate" style={{ color: '#9B9B9B' }}>{lead.property}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-[10px]" style={{ color: '#C8C8C8' }}>{lead.time}</p>
-                <button
-                  className="mt-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border-none cursor-pointer"
-                  style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+              + Agregar propiedad
+            </button>
+          </div>
+        )}
+
+        {!leadsLoading && leads.length > 0 && (
+          <div
+            className="rounded-[20px] overflow-hidden"
+            style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+          >
+            {leads.map((lead, i) => {
+              const hot      = isHot(lead.creado_en)
+              const userName = lead.usuario?.nombre ?? 'Usuario'
+              const propLabel = lead.propiedad
+                ? `${lead.propiedad.ciudad} · ${lead.propiedad.tipo}`
+                : '—'
+              const waLink = lead.usuario?.telefono
+                ? `https://wa.me/${lead.usuario.telefono.replace(/\D/g, '')}`
+                : null
+
+              return (
+                <div
+                  key={lead.id}
+                  className="flex items-center gap-3 px-4 py-3"
+                  style={{ borderBottom: i < leads.length - 1 ? '1px solid #F0EAE1' : 'none' }}
                 >
-                  Contactar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+                  {/* Avatar */}
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden"
+                    style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+                  >
+                    {lead.usuario?.avatar_url ? (
+                      <img src={lead.usuario.avatar_url} alt={userName} className="w-full h-full object-cover" />
+                    ) : (
+                      initials(userName)
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                        {userName}
+                      </p>
+                      <span className="text-[11px]">{hot ? '🔥' : '🌡️'}</span>
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-[1px] rounded-full flex-shrink-0"
+                        style={{
+                          background: hot ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)',
+                          color:      hot ? '#DC2626'              : '#92400E',
+                        }}
+                      >
+                        {hot ? 'Hot' : 'Warm'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] truncate" style={{ color: '#9B9B9B' }}>
+                      {propLabel}
+                    </p>
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[10px]" style={{ color: '#C8C8C8' }}>
+                      {relativeTime(lead.creado_en)}
+                    </p>
+                    {waLink ? (
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                        style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
+                      >
+                        WA
+                      </a>
+                    ) : (
+                      <span
+                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                        style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                      >
+                        Contactar
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Propiedades activas */}
+      {/* ── Mis propiedades ────────────────────────────────────── */}
       <div className="px-4 mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>Mis propiedades</h2>
+          <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>
+            Mis propiedades
+          </h2>
           <button
             onClick={() => setShowNewPropModal(true)}
             className="text-[12px] font-semibold border-none cursor-pointer bg-transparent"
@@ -210,51 +365,66 @@ export default function AdvisorDashboard() {
             + Agregar
           </button>
         </div>
-        <div className="flex flex-col gap-3">
-          {MOCK_ACTIVE_PROPERTIES.map((prop) => (
-            <div
-              key={prop.titulo}
-              className="rounded-[20px] overflow-hidden"
-              style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
-            >
-              <div className="flex items-center gap-3 p-4">
-                <div
-                  className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[24px]"
-                  style={{ background: `linear-gradient(135deg, ${prop.gradient[0]} 0%, ${prop.gradient[1]} 100%)` }}
-                >
-                  {prop.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>{prop.titulo}</p>
-                    <span
-                      className="text-[10px] font-medium px-2 py-[2px] rounded-full ml-2 flex-shrink-0"
-                      style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
-                    >
-                      {prop.tipo}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[11px]" style={{ color: '#9B9B9B' }}>👁 {prop.vistas.toLocaleString()}</span>
-                    <span className="text-[11px]" style={{ color: '#9B9B9B' }}>♥ {prop.likes}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F0EAE1' }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(prop.vistas / prop.maxVistas) * 100}%` }}
-                      transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-                      className="h-full rounded-full"
-                      style={{ background: 'linear-gradient(90deg, #E8A98A 0%, #C2714F 100%)' }}
-                    />
+
+        {propsLoading && (
+          <div className="flex justify-center py-6">
+            <span className="text-[28px] animate-pulse">🏠</span>
+          </div>
+        )}
+
+        {!propsLoading && myProps.length === 0 && (
+          <div
+            className="rounded-[20px] p-5 text-center"
+            style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+          >
+            <p className="text-[13px]" style={{ color: '#9B9B9B' }}>
+              Sin propiedades activas aún.
+            </p>
+          </div>
+        )}
+
+        {!propsLoading && myProps.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {myProps.map((prop) => (
+              <div
+                key={prop.id}
+                className="rounded-[20px] overflow-hidden"
+                style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+              >
+                <div className="flex items-center gap-3 p-4">
+                  {/* Thumbnail */}
+                  <div
+                    className="w-[52px] h-[52px] rounded-[14px] flex-shrink-0"
+                    style={{
+                      ...(prop.imagenes[0]
+                        ? { backgroundImage: `url(${prop.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                        : { background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }),
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                        {prop.titulo}
+                      </p>
+                      <span
+                        className="text-[10px] font-medium px-2 py-[2px] rounded-full ml-2 flex-shrink-0"
+                        style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                      >
+                        {prop.tipo}
+                      </span>
+                    </div>
+                    <p className="text-[12px] font-bold" style={{ color: '#C2714F' }}>
+                      {fmtPrice(prop.precio)}
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* AI promo card */}
+      {/* ── AI promo card ──────────────────────────────────────── */}
       <div className="px-4 mb-6">
         <div
           className="rounded-[24px] p-5 relative overflow-hidden"
@@ -290,6 +460,7 @@ export default function AdvisorDashboard() {
         </div>
       </div>
 
+      {/* ── Modals ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAIModal && (
           <AIGeneratorModal onDismiss={() => setShowAIModal(false)} />
@@ -301,6 +472,16 @@ export default function AdvisorDashboard() {
           <NewPropertyModal
             onDismiss={() => setShowNewPropModal(false)}
             onCreated={() => { setShowNewPropModal(false); setKpisKey((k) => k + 1) }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSettings && perfil && (
+          <AdvisorSettingsModal
+            perfil={perfil}
+            onSaved={(updated) => { setPerfil(updated); setShowSettings(false) }}
+            onDismiss={() => setShowSettings(false)}
           />
         )}
       </AnimatePresence>
