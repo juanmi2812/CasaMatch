@@ -3,12 +3,12 @@ import type { CaracteristicasLifestyle, Propiedad, TipoInteraccion, TipoPropieda
 import type { PropiedadMock } from './mockData'
 
 const DEFAULT_LIFESTYLE: CaracteristicasLifestyle = {
-  seguridad:          0,
-  trafico:            0,
-  vida_social:        0,
-  tranquilidad:       0,
-  plusvalia:          0,
-  servicios_cercanos: 0,
+  seguridad:          3,
+  trafico:            3,
+  vida_social:        3,
+  tranquilidad:       3,
+  plusvalia:          3,
+  servicios_cercanos: 3,
   pet_friendly:       false,
   familias:           false,
   home_office:        false,

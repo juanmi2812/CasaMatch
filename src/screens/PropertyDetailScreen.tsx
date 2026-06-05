@@ -17,18 +17,6 @@ interface AsesorInfo {
   agencia:    string | null
 }
 
-// ─── ScheduleModal is now imported from components/ui/ScheduleModal
-
-const LIFESTYLE_BARS = [
-  { key: 'seguridad',          label: 'Seguridad',       icon: '🔐' },
-  { key: 'trafico',            label: 'Sin tráfico',     icon: '🚗' },
-  { key: 'vida_social',        label: 'Vida social',     icon: '🍕' },
-  { key: 'tranquilidad',       label: 'Tranquilidad',    icon: '🤫' },
-  { key: 'plusvalia',          label: 'Plusvalía',       icon: '📈' },
-  { key: 'servicios_cercanos', label: 'Servicios cerca', icon: '🏪' },
-] as const
-
-type LifestyleKey = (typeof LIFESTYLE_BARS)[number]['key']
 
 function formatPrice(n: number): string {
   if (n >= 1_000_000) {
@@ -202,44 +190,60 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
         <h2 className="font-display text-[18px] font-bold text-white mb-0.5">Cómo se siente vivir aquí</h2>
         <p className="text-[12px] mb-5" style={{ color: 'rgba(255,255,255,0.48)' }}>Basado en datos del vecindario</p>
 
-        <div className="flex flex-col gap-4">
-          {LIFESTYLE_BARS.map(({ key, label, icon }, idx) => {
-            const raw  = (property.caracteristicas?.[key as LifestyleKey] as number) ?? 0
-            const pct  = (raw / 5) * 100
-            const color = pct >= 70 ? '#4ADE80' : pct >= 40 ? '#FBD249' : '#F87171'
-            const grad  = pct >= 70
-              ? 'linear-gradient(90deg, #4ADE80, #22C55E)'
-              : pct >= 40 ? 'linear-gradient(90deg, #FBD249, #F59E0B)'
-              : 'linear-gradient(90deg, #F87171, #EF4444)'
-            return (
-              <div key={key}>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[13px] text-white">{icon} {label}</span>
-                  <span className="text-[12px] font-bold" style={{ color }}>{raw}/5</span>
-                </div>
-                <div className="h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: grad }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.75, delay: idx * 0.07, ease: [0.4, 0, 0.2, 1] }}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        {(() => {
+          // Double-layer fallback: object may be null/partial from DB
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const datosZona: Record<string, any> = property.caracteristicas || {}
 
-        {(property.caracteristicas.pet_friendly || property.caracteristicas.familias || property.caracteristicas.home_office) && (
+          const BARS = [
+            { key: 'seguridad',          val: Number(datosZona.seguridad          || 0), label: 'Seguridad',       icon: '🔐' },
+            { key: 'trafico',            val: Number(datosZona.trafico            || 0), label: 'Sin tráfico',     icon: '🚗' },
+            { key: 'vida_social',        val: Number(datosZona.vida_social        || 0), label: 'Vida social',     icon: '🍕' },
+            { key: 'tranquilidad',       val: Number(datosZona.tranquilidad       || 0), label: 'Tranquilidad',    icon: '🤫' },
+            { key: 'plusvalia',          val: Number(datosZona.plusvalia          || 0), label: 'Plusvalía',       icon: '📈' },
+            { key: 'servicios_cercanos', val: Number(datosZona.servicios_cercanos || datosZona.servicios_cerca || 0), label: 'Servicios cerca', icon: '🏪' },
+          ]
+
+          return (
+            <div className="flex flex-col gap-4">
+              {BARS.map(({ key, val, label, icon }, idx) => {
+                const pct   = Math.min(((val / 5) * 100), 100)
+                const color = pct >= 70 ? '#4ADE80' : pct >= 40 ? '#FBD249' : '#F87171'
+                const grad  = pct >= 70
+                  ? 'linear-gradient(90deg, #4ADE80, #22C55E)'
+                  : pct >= 40 ? 'linear-gradient(90deg, #FBD249, #F59E0B)'
+                  : 'linear-gradient(90deg, #F87171, #EF4444)'
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[13px] text-white">{icon} {label}</span>
+                      <span className="text-[12px] font-bold" style={{ color }}>{val}/5</span>
+                    </div>
+                    <div className="h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: grad, width: `${pct}%` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.75, delay: idx * 0.07, ease: [0.4, 0, 0.2, 1] }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
+
+        {(property.caracteristicas?.pet_friendly || property.caracteristicas?.familias || property.caracteristicas?.home_office) && (
           <div className="flex flex-wrap gap-2 mt-5">
-            {property.caracteristicas.pet_friendly && (
+            {property.caracteristicas?.pet_friendly && (
               <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>🐾 Pet friendly</span>
             )}
-            {property.caracteristicas.familias && (
+            {property.caracteristicas?.familias && (
               <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>👨‍👩‍👧 Zona familiar</span>
             )}
-            {property.caracteristicas.home_office && (
+            {property.caracteristicas?.home_office && (
               <span className="px-3 py-1 rounded-full text-[11px] font-medium text-white" style={{ background: 'rgba(255,255,255,0.12)' }}>💻 Home office</span>
             )}
           </div>
