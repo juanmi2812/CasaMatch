@@ -12,6 +12,7 @@ import ReelsScreen from './screens/ReelsScreen'
 import AdvisorDashboard from './screens/AdvisorDashboard'
 import AdminDashboard from './screens/AdminDashboard'
 import ProfileScreen from './screens/ProfileScreen'
+import AsesorProfileScreen from './screens/AsesorProfileScreen'
 import type { PropiedadMock } from './services/mockData'
 import './App.css'
 
@@ -23,7 +24,8 @@ interface OnboardingResult {
 function AppContent() {
   const { preferencias, session: authSession } = useAuth()
   const [screen,           setScreen]           = useState<Screen>('landing')
-  const [selectedProperty, setSelectedProperty] = useState<PropiedadMock | null>(null)
+  const [selectedProperty,  setSelectedProperty]  = useState<PropiedadMock | null>(null)
+  const [asesorPerfilId,    setAsesorPerfilId]    = useState<string | null>(null)
   const [onboardingResult, setOnboardingResult] = useState<OnboardingResult>({ ciudad: null, tipoPropiedad: null })
   const [showAppAuthModal, setShowAppAuthModal] = useState(false)
   const [authModalMode,    setAuthModalMode]    = useState<'login' | 'register'>('login')
@@ -113,6 +115,13 @@ function AppContent() {
         <PropertyDetailScreen
           property={selectedProperty}
           onBack={() => setScreen('feed')}
+          onViewAsesorPerfil={(id) => { setAsesorPerfilId(id); setScreen('asesor-perfil') }}
+        />
+      )}
+      {screen === 'asesor-perfil' && asesorPerfilId && (
+        <AsesorProfileScreen
+          asesorId={asesorPerfilId}
+          onBack={() => { setScreen('detail'); setAsesorPerfilId(null) }}
         />
       )}
       {screen === 'reels'   && <ReelsScreen />}

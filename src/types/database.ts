@@ -43,14 +43,18 @@ export interface CaracteristicasLifestyle {
 // =============================================================
 
 export interface Perfil {
-  id:             string
-  nombre:         string
-  telefono:       string | null
-  avatar_url:     string | null
-  agencia:        string | null
-  rol:            RolUsuario
-  creado_en:      string
-  actualizado_en: string
+  id:                 string
+  nombre:             string
+  telefono:           string | null
+  avatar_url:         string | null
+  agencia:            string | null
+  rol:                RolUsuario
+  biografia?:         string | null
+  instagram_url?:     string | null
+  tiktok_url?:        string | null
+  anios_experiencia?: number | null
+  creado_en:          string
+  actualizado_en:     string
 }
 
 export interface PreferenciaOnboarding {

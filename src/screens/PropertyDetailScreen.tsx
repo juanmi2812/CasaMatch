@@ -6,15 +6,19 @@ import type { PropiedadMock } from '../services/mockData'
 import ScheduleModal from '../components/ui/ScheduleModal'
 
 interface Props {
-  property: PropiedadMock
-  onBack:   () => void
+  property:            PropiedadMock
+  onBack:              () => void
+  onViewAsesorPerfil?: (asesorId: string) => void
 }
 
 interface AsesorInfo {
-  nombre:     string
-  telefono:   string | null
-  avatar_url: string | null
-  agencia:    string | null
+  nombre:           string
+  telefono:         string | null
+  avatar_url:       string | null
+  agencia:          string | null
+  instagram_url:    string | null
+  tiktok_url:       string | null
+  anios_experiencia: number | null
 }
 
 
@@ -32,7 +36,7 @@ function initials(name: string): string {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function PropertyDetailScreen({ property, onBack }: Props) {
+export default function PropertyDetailScreen({ property, onBack, onViewAsesorPerfil }: Props) {
   const { session }                 = useAuth()
   const [galleryIdx, setGalleryIdx] = useState(0)
   const [asesor,     setAsesor]     = useState<AsesorInfo | null>(null)
@@ -43,7 +47,7 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
     if (!property.asesorId) return
     supabase
       .from('perfiles')
-      .select('nombre, telefono, avatar_url, agencia')
+      .select('nombre, telefono, avatar_url, agencia, instagram_url, tiktok_url, anios_experiencia')
       .eq('id', property.asesorId)
       .single()
       .then(({ data, error }) => {
@@ -248,13 +252,13 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
 
       {/* ── Asesor card ─────────────────────────────────────────── */}
       <div
-        className="mx-5 rounded-[24px] p-5 pb-24"
+        className="mx-5 rounded-[24px] p-5 pb-28"
         style={{ background: 'white', border: '1.5px solid #EDE4D7', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#C2714F' }}>
           Tu asesor asignado
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-display text-[16px] font-bold text-white overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #E8A98A, #C2714F)' }}
@@ -275,11 +279,57 @@ export default function PropertyDetailScreen({ property, onBack }: Props) {
             <p className="text-[12px]" style={{ color: '#6B6B6B' }}>
               {asesor?.agencia ?? 'Asesor inmobiliario'}
             </p>
-            {asesor?.telefono && (
-              <p className="text-[11px]" style={{ color: '#9B9B9B' }}>📱 {asesor.telefono}</p>
-            )}
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              {asesor?.telefono && (
+                <p className="text-[11px]" style={{ color: '#9B9B9B' }}>📱 {asesor.telefono}</p>
+              )}
+              {asesor?.anios_experiencia != null && (
+                <span className="text-[10px] font-semibold px-2 py-[2px] rounded-full" style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}>
+                  {asesor.anios_experiencia} años exp.
+                </span>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Social links */}
+        {(asesor?.instagram_url || asesor?.tiktok_url) && (
+          <div className="flex gap-2 mb-3">
+            {asesor.instagram_url && (
+              <a
+                href={asesor.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(225,48,108,0.10)', color: '#E1306C', textDecoration: 'none' }}
+              >
+                📸 Instagram
+              </a>
+            )}
+            {asesor.tiktok_url && (
+              <a
+                href={asesor.tiktok_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(0,0,0,0.07)', color: '#1A1A1A', textDecoration: 'none' }}
+              >
+                🎵 TikTok
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Ver perfil completo */}
+        {property.asesorId && onViewAsesorPerfil && (
+          <button
+            onClick={() => onViewAsesorPerfil(property.asesorId!)}
+            className="w-full py-2.5 rounded-[14px] text-[12px] font-semibold border-none cursor-pointer transition-all active:scale-[.97]"
+            style={{ background: '#F5EFE6', color: '#C2714F', border: '1px solid rgba(194,113,79,0.20)' }}
+          >
+            Ver perfil completo →
+          </button>
+        )}
       </div>
 
       {/* ── Sticky bottom action bar ────────────────────────────── */}

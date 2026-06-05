@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'admin' | 'detail' | 'profile'
+export type Screen = 'landing' | 'onboarding' | 'feed' | 'reels' | 'saved' | 'advisor' | 'admin' | 'detail' | 'profile' | 'asesor-perfil'
 
 interface Props {
   screen: Screen
@@ -16,7 +16,7 @@ const NAV_ITEMS: Array<{ id: Screen; icon: string; label: string; title: string 
   { id: 'advisor', icon: '👤', label: 'Asesor',    title: 'Acceder a tu panel de asesor'      },
 ]
 
-const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin', 'profile']
+const POST_ONBOARDING: Screen[] = ['feed', 'reels', 'saved', 'advisor', 'admin', 'profile', 'asesor-perfil']
 
 export default function PhoneShell({ screen, onNavigate, children }: Props) {
   const showNav = POST_ONBOARDING.includes(screen)
