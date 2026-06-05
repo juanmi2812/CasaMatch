@@ -1,6 +1,18 @@
 import { supabase } from '../lib/supabaseClient'
-import type { Propiedad, TipoInteraccion, TipoPropiedad } from '../types/database'
+import type { CaracteristicasLifestyle, Propiedad, TipoInteraccion, TipoPropiedad } from '../types/database'
 import type { PropiedadMock } from './mockData'
+
+const DEFAULT_LIFESTYLE: CaracteristicasLifestyle = {
+  seguridad:          0,
+  trafico:            0,
+  vida_social:        0,
+  tranquilidad:       0,
+  plusvalia:          0,
+  servicios_cercanos: 0,
+  pet_friendly:       false,
+  familias:           false,
+  home_office:        false,
+}
 
 // ─── Gradient + emoji fallbacks per property type ────────────────────────────
 
@@ -23,7 +35,7 @@ const TIPO_EMOJIS: Record<TipoPropiedad, string> = {
 // ─── Map DB row → PropiedadMock ───────────────────────────────────────────────
 
 export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
-  const c    = p.caracteristicas_lifestyle
+  const c    = (p.caracteristicas_lifestyle as CaracteristicasLifestyle | null | undefined) ?? DEFAULT_LIFESTYLE
   const nums = [c.seguridad, c.trafico, c.vida_social, c.tranquilidad, c.plusvalia, c.servicios_cercanos]
   const compatibilidad = Math.round((nums.reduce((a, b) => a + b, 0) / (nums.length * 5)) * 100)
 
@@ -70,7 +82,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<Prop
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase
     .from('propiedades')
-    .select('*')
+    .select('id, asesor_id, titulo, descripcion, tipo, precio, ciudad, ubicacion, recamaras, banos, estacionamientos, m2, caracteristicas_lifestyle, url_video, imagenes, activa, destacada, creado_en, actualizado_en')
     .eq('activa', true)
     .order('creado_en', { ascending: false })
 
