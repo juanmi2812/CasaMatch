@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AIGeneratorModal from '../components/ui/AIGeneratorModal'
 import NewPropertyModal from '../components/ui/NewPropertyModal'
@@ -138,6 +138,20 @@ export default function AdvisorDashboard() {
       })
   }, [session, kpisKey])
 
+  const hotProperty = useMemo(() => {
+    if (leads.length === 0) return null
+    const counts: Record<string, number> = {}
+    for (const lead of leads) {
+      const titulo = lead.propiedad?.titulo
+      if (titulo) counts[titulo] = (counts[titulo] ?? 0) + 1
+    }
+    const [topTitulo, topCount] = Object.entries(counts).reduce(
+      (best, entry) => (entry[1] > best[1] ? entry : best),
+      ['', 0],
+    )
+    return topCount >= 2 ? { titulo: topTitulo, conteo: topCount } : null
+  }, [leads])
+
   async function handleStatusChange(leadId: string, newStatus: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
@@ -262,6 +276,26 @@ export default function AdvisorDashboard() {
           </button>
         )}
       </div>
+
+      {/* ── Radar de Interés ───────────────────────────────────── */}
+      {hotProperty && filtroActivo === 'todos' && (
+        <div className="mx-4 mb-6 rounded-2xl border border-orange-200 p-4"
+          style={{ background: 'linear-gradient(to right, #fff7ed, #fff3e0)' }}>
+          <div className="flex items-start gap-3">
+            <span className="text-[32px] leading-none flex-shrink-0">🔥</span>
+            <div>
+              <p className="text-[13px] font-bold" style={{ color: '#9A3412' }}>
+                ¡Tu inventario está atrayendo miradas!
+              </p>
+              <p className="text-sm mt-0.5" style={{ color: '#C2410C' }}>
+                Tu propiedad <strong>{hotProperty.titulo}</strong> ha recibido{' '}
+                <strong>{hotProperty.conteo}</strong> interacciones recientes.{' '}
+                ¡No pierdas el momentum!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Leads recientes ────────────────────────────────────── */}
       {(filtroActivo === 'todos' || filtroActivo === 'leads') && <div className="px-4 mb-5">
@@ -455,12 +489,22 @@ export default function AdvisorDashboard() {
                       <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
                         {prop.titulo}
                       </p>
-                      <span
-                        className="text-[10px] font-medium px-2 py-[2px] rounded-full ml-2 flex-shrink-0"
-                        style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
-                      >
-                        {prop.tipo}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {hotProperty?.titulo === prop.titulo && (
+                          <span
+                            className="text-[10px] font-bold px-1.5 py-[2px] rounded-full"
+                            style={{ background: 'rgba(239,68,68,0.10)', color: '#DC2626' }}
+                          >
+                            🔥 En tendencia
+                          </span>
+                        )}
+                        <span
+                          className="text-[10px] font-medium px-2 py-[2px] rounded-full"
+                          style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                        >
+                          {prop.tipo}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-[12px] font-bold" style={{ color: '#C2714F' }}>
