@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import type { TipoPropiedad, CaracteristicasLifestyle } from '../../types/database'
+import { calcularMetricasSimuladas, type MetricasVecindario } from '../../lib/aiClient'
+import type { TipoPropiedad } from '../../types/database'
 
 interface Props {
   onDismiss: () => void
@@ -17,16 +18,18 @@ const TIPOS: { value: TipoPropiedad; label: string }[] = [
   { value: 'oficina',      label: 'Oficina'          },
 ]
 
-const DEFAULT_CARACTERISTICAS: CaracteristicasLifestyle = {
-  seguridad:          3,
-  trafico:            3,
-  vida_social:        3,
-  tranquilidad:       3,
-  plusvalia:          3,
-  servicios_cercanos: 3,
-  pet_friendly:       false,
-  familias:           false,
-  home_office:        false,
+const METRICAS_LABELS: { key: keyof MetricasVecindario; label: string }[] = [
+  { key: 'seguridad',       label: 'Seguridad'       },
+  { key: 'trafico',         label: 'Tráfico'          },
+  { key: 'vida_social',     label: 'Vida social'      },
+  { key: 'tranquilidad',    label: 'Tranquilidad'     },
+  { key: 'plusvalia',       label: 'Plusvalía'        },
+  { key: 'servicios_cerca', label: 'Servicios cerca'  },
+]
+
+const DEFAULT_METRICAS: MetricasVecindario = {
+  seguridad: 3, trafico: 3, vida_social: 3,
+  tranquilidad: 3, plusvalia: 3, servicios_cerca: 3,
 }
 
 const FIELD_STYLE = { background: '#F0EAE1', color: '#1A1A1A' }
@@ -64,22 +67,37 @@ function buildDescription(tipo: TipoPropiedad, ubicacion: string, precio: string
 export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
   const { session } = useAuth()
 
-  const [titulo,      setTitulo]      = useState('')
-  const [tipo,        setTipo]        = useState<TipoPropiedad>('casa')
-  const [precio,      setPrecio]      = useState('')
-  const [ubicacion,   setUbicacion]   = useState('')
-  const [ciudad,      setCiudad]      = useState('')
-  const [recamaras,   setRecamaras]   = useState('')
-  const [banos,       setBanos]       = useState('')
-  const [m2,          setM2]          = useState('')
-  const [descripcion, setDescripcion] = useState('')
-  const [imageUrls,   setImageUrls]   = useState('')   // comma-separated
-  const [localFiles,  setLocalFiles]  = useState<File[]>([])
-  const [saving,      setSaving]      = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+  const [titulo,           setTitulo]           = useState('')
+  const [tipo,             setTipo]             = useState<TipoPropiedad>('casa')
+  const [precio,           setPrecio]           = useState('')
+  const [ubicacion,        setUbicacion]        = useState('')
+  const [ciudad,           setCiudad]           = useState('')
+  const [recamaras,        setRecamaras]        = useState('')
+  const [banos,            setBanos]            = useState('')
+  const [m2,               setM2]               = useState('')
+  const [descripcion,      setDescripcion]      = useState('')
+  const [imageUrls,        setImageUrls]        = useState('')
+  const [localFiles,       setLocalFiles]       = useState<File[]>([])
+  const [caracteristicas,  setCaracteristicas]  = useState<MetricasVecindario>(DEFAULT_METRICAS)
+  const [loadingMetricas,  setLoadingMetricas]  = useState(false)
+  const [saving,           setSaving]           = useState(false)
+  const [error,            setError]            = useState<string | null>(null)
 
   function handleGenerateDescription() {
     setDescripcion(buildDescription(tipo, ubicacion, precio))
+  }
+
+  async function handleCalcularMetricas() {
+    setLoadingMetricas(true)
+    setError(null)
+    try {
+      const result = await calcularMetricasSimuladas(ubicacion)
+      setCaracteristicas(result)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al calcular métricas')
+    } finally {
+      setLoadingMetricas(false)
+    }
   }
 
   async function uploadFiles(userId: string): Promise<string[]> {
@@ -117,18 +135,18 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: err } = await (supabase as any).from('propiedades').insert({
-      asesor_id:                 session.user.id,
-      titulo:                    titulo.trim(),
+      asesor_id:    session.user.id,
+      titulo:       titulo.trim(),
       tipo,
-      precio:                    Number(precio),
-      ubicacion:                 ubicacion.trim(),
-      ciudad:                    ciudad.trim().toLowerCase(),
-      recamaras:                 recamaras ? Number(recamaras) : null,
-      banos:                     banos     ? Number(banos)     : null,
-      m2:                        m2        ? Number(m2)        : null,
-      descripcion:               descripcion.trim() || null,
-      imagenes:                  allImages,
-      caracteristicas_lifestyle: DEFAULT_CARACTERISTICAS,
+      precio:       Number(precio),
+      ubicacion:    ubicacion.trim(),
+      ciudad:       ciudad.trim().toLowerCase(),
+      recamaras:    recamaras ? Number(recamaras) : null,
+      banos:        banos     ? Number(banos)     : null,
+      m2:           m2        ? Number(m2)        : null,
+      descripcion:  descripcion.trim() || null,
+      imagenes:     allImages,
+      caracteristicas,
     })
 
     setSaving(false)
@@ -146,6 +164,7 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
     setDescripcion('')
     setImageUrls('')
     setLocalFiles([])
+    setCaracteristicas(DEFAULT_METRICAS)
     onCreated()
   }
 
@@ -218,9 +237,9 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
           <Field label="Ciudad *"       value={ciudad}    onChange={setCiudad}    placeholder="Ej. queretaro" />
 
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Recámaras"     value={recamaras} onChange={setRecamaras} placeholder="3" inputMode="numeric" />
-            <Field label="Baños"         value={banos}     onChange={setBanos}     placeholder="2" inputMode="numeric" />
-            <Field label="m²"            value={m2}        onChange={setM2}        placeholder="180" inputMode="numeric" />
+            <Field label="Recámaras" value={recamaras} onChange={setRecamaras} placeholder="3"   inputMode="numeric" />
+            <Field label="Baños"     value={banos}     onChange={setBanos}     placeholder="2"   inputMode="numeric" />
+            <Field label="m²"        value={m2}        onChange={setM2}        placeholder="180" inputMode="numeric" />
           </div>
 
           {/* ── Descripción con IA ──────────────────────── */}
@@ -250,10 +269,44 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
             />
           </div>
 
+          {/* ── Métricas del Vecindario ──────────────────── */}
+          <SectionLabel>Métricas del Vecindario</SectionLabel>
+
+          <div
+            className="rounded-[18px] p-4 flex flex-col gap-3"
+            style={{ border: '1.5px solid #EDE4D7', background: '#FDFAF6' }}
+          >
+            {/* Botón IA */}
+            <button
+              type="button"
+              onClick={handleCalcularMetricas}
+              disabled={loadingMetricas}
+              className="w-full py-3 rounded-[14px] text-[14px] font-bold border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60 flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #C2714F 0%, #E8A98A 100%)',
+                color: 'white',
+                boxShadow: '0 4px 14px rgba(194,113,79,0.35)',
+              }}
+            >
+              {loadingMetricas
+                ? <><span className="animate-spin text-[16px]">⏳</span> Calculando…</>
+                : <>✨ Calcular métricas por IA</>}
+            </button>
+
+            {/* Sliders */}
+            {METRICAS_LABELS.map(({ key, label }) => (
+              <SliderField
+                key={key}
+                label={label}
+                value={caracteristicas[key]}
+                onChange={(v) => setCaracteristicas((prev) => ({ ...prev, [key]: v }))}
+              />
+            ))}
+          </div>
+
           {/* ── Imágenes ────────────────────────────────── */}
           <SectionLabel>Imágenes</SectionLabel>
 
-          {/* Opción A — URLs */}
           <div>
             <label className="block text-[12px] font-semibold mb-1.5" style={{ color: '#6B6B6B' }}>
               Opción A — URLs (separadas por comas)
@@ -268,7 +321,6 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
             />
           </div>
 
-          {/* Opción B — archivos locales */}
           <div>
             <label className="block text-[12px] font-semibold mb-1.5" style={{ color: '#6B6B6B' }}>
               Opción B — Subir desde dispositivo
@@ -347,6 +399,34 @@ function Field({
         inputMode={inputMode}
         className={FIELD_CLASS}
         style={FIELD_STYLE}
+      />
+    </div>
+  )
+}
+
+function SliderField({
+  label, value, onChange,
+}: {
+  label:    string
+  value:    number
+  onChange: (v: number) => void
+}) {
+  const color = value >= 4 ? '#4ADE80' : value === 3 ? '#FBBF24' : '#F87171'
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-semibold" style={{ color: '#6B6B6B' }}>{label}</span>
+        <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{value}/5</span>
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={5}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-[4px] rounded-full appearance-none cursor-pointer"
+        style={{ accentColor: color }}
       />
     </div>
   )

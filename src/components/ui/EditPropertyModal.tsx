@@ -2,21 +2,24 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { calcularMetricasSimuladas, type MetricasVecindario } from '../../lib/aiClient'
 import type { TipoPropiedad } from '../../types/database'
 
 interface PropData {
-  id:          string
-  titulo:      string
-  tipo:        string
-  precio:      number
-  ubicacion:   string
-  ciudad:      string
-  descripcion: string | null
-  recamaras:   number | null
-  banos:       number | null
-  m2:          number | null
-  activa:      boolean
-  imagenes:    string[]
+  id:                        string
+  titulo:                    string
+  tipo:                      string
+  precio:                    number
+  ubicacion:                 string
+  ciudad:                    string
+  descripcion:               string | null
+  recamaras:                 number | null
+  banos:                     number | null
+  m2:                        number | null
+  activa:                    boolean
+  imagenes:                  string[]
+  caracteristicas?:          Record<string, number> | null
+  caracteristicas_lifestyle?: Record<string, number> | null
 }
 
 interface Props {
@@ -33,8 +36,37 @@ const TIPOS: { value: TipoPropiedad; label: string }[] = [
   { value: 'oficina',      label: 'Oficina'         },
 ]
 
+const METRICAS_LABELS: { key: keyof MetricasVecindario; label: string }[] = [
+  { key: 'seguridad',       label: 'Seguridad'       },
+  { key: 'trafico',         label: 'Tráfico'          },
+  { key: 'vida_social',     label: 'Vida social'      },
+  { key: 'tranquilidad',    label: 'Tranquilidad'     },
+  { key: 'plusvalia',       label: 'Plusvalía'        },
+  { key: 'servicios_cerca', label: 'Servicios cerca'  },
+]
+
 const FIELD_STYLE = { background: '#F0EAE1', color: '#1A1A1A' }
 const FIELD_CLASS = 'w-full px-4 py-3 rounded-[14px] text-[14px] border-none outline-none'
+
+function initMetricas(prop: PropData): MetricasVecindario {
+  const cA = prop.caracteristicas          ?? {}
+  const cL = prop.caracteristicas_lifestyle ?? {}
+  const p  = (keyL: string, keyA?: string): number => {
+    const fromA = cA[keyA ?? keyL]
+    const fromL = cL[keyL]
+    if (fromA != null && fromA > 0) return fromA
+    if (fromL != null && fromL > 0) return fromL
+    return 3
+  }
+  return {
+    seguridad:       p('seguridad'),
+    trafico:         p('trafico'),
+    vida_social:     p('vida_social'),
+    tranquilidad:    p('tranquilidad'),
+    plusvalia:       p('plusvalia'),
+    servicios_cerca: p('servicios_cercanos', 'servicios_cerca'),
+  }
+}
 
 // ─── AI description generator ────────────────────────────────────────────────
 
@@ -94,29 +126,71 @@ function Field({
   )
 }
 
+function SliderField({
+  label, value, onChange,
+}: {
+  label:    string
+  value:    number
+  onChange: (v: number) => void
+}) {
+  const color = value >= 4 ? '#4ADE80' : value === 3 ? '#FBBF24' : '#F87171'
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-semibold" style={{ color: '#6B6B6B' }}>{label}</span>
+        <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{value}/5</span>
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={5}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-[4px] rounded-full appearance-none cursor-pointer"
+        style={{ accentColor: color }}
+      />
+    </div>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
   const { session } = useAuth()
 
-  const [titulo,      setTitulo]      = useState(prop.titulo)
-  const [tipo,        setTipo]        = useState<TipoPropiedad>(prop.tipo as TipoPropiedad)
-  const [precio,      setPrecio]      = useState(String(prop.precio))
-  const [ubicacion,   setUbicacion]   = useState(prop.ubicacion)
-  const [ciudad,      setCiudad]      = useState(prop.ciudad)
-  const [recamaras,   setRecamaras]   = useState(prop.recamaras != null ? String(prop.recamaras) : '')
-  const [banos,       setBanos]       = useState(prop.banos     != null ? String(prop.banos)     : '')
-  const [m2,          setM2]          = useState(prop.m2        != null ? String(prop.m2)        : '')
-  const [descripcion, setDescripcion] = useState(prop.descripcion ?? '')
-  const [activa,      setActiva]      = useState(prop.activa)
-  // Pre-fill textarea with existing image URLs so user can manage them
-  const [imageUrls,   setImageUrls]   = useState(prop.imagenes?.join(', ') ?? '')
-  const [localFiles,  setLocalFiles]  = useState<File[]>([])
-  const [saving,      setSaving]      = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+  const [titulo,          setTitulo]          = useState(prop.titulo)
+  const [tipo,            setTipo]            = useState<TipoPropiedad>(prop.tipo as TipoPropiedad)
+  const [precio,          setPrecio]          = useState(String(prop.precio))
+  const [ubicacion,       setUbicacion]       = useState(prop.ubicacion)
+  const [ciudad,          setCiudad]          = useState(prop.ciudad)
+  const [recamaras,       setRecamaras]       = useState(prop.recamaras != null ? String(prop.recamaras) : '')
+  const [banos,           setBanos]           = useState(prop.banos     != null ? String(prop.banos)     : '')
+  const [m2,              setM2]              = useState(prop.m2        != null ? String(prop.m2)        : '')
+  const [descripcion,     setDescripcion]     = useState(prop.descripcion ?? '')
+  const [activa,          setActiva]          = useState(prop.activa)
+  const [imageUrls,       setImageUrls]       = useState(prop.imagenes?.join(', ') ?? '')
+  const [localFiles,      setLocalFiles]      = useState<File[]>([])
+  const [caracteristicas, setCaracteristicas] = useState<MetricasVecindario>(() => initMetricas(prop))
+  const [loadingMetricas, setLoadingMetricas] = useState(false)
+  const [saving,          setSaving]          = useState(false)
+  const [error,           setError]           = useState<string | null>(null)
 
   function handleGenerateDescription() {
     setDescripcion(buildDescription(tipo, ubicacion, precio))
+  }
+
+  async function handleCalcularMetricas() {
+    setLoadingMetricas(true)
+    setError(null)
+    try {
+      const result = await calcularMetricasSimuladas(ubicacion)
+      setCaracteristicas(result)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al calcular métricas')
+    } finally {
+      setLoadingMetricas(false)
+    }
   }
 
   async function uploadFiles(userId: string): Promise<string[]> {
@@ -144,7 +218,7 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
     setSaving(true)
     setError(null)
 
-    const uploadedUrls      = await uploadFiles(session.user.id)
+    const uploadedUrls       = await uploadFiles(session.user.id)
     const urlListFromTextarea = imageUrls
       .split(',')
       .map((s) => s.trim())
@@ -155,17 +229,18 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
     const { error: err } = await (supabase as any)
       .from('propiedades')
       .update({
-        titulo:      titulo.trim(),
+        titulo:         titulo.trim(),
         tipo,
-        precio:      Number(precio),
-        ubicacion:   ubicacion.trim(),
-        ciudad:      ciudad.trim().toLowerCase(),
-        recamaras:   recamaras ? Number(recamaras) : null,
-        banos:       banos     ? Number(banos)     : null,
-        m2:          m2        ? Number(m2)        : null,
-        descripcion: descripcion.trim() || null,
-        imagenes:    allImages,
+        precio:         Number(precio),
+        ubicacion:      ubicacion.trim(),
+        ciudad:         ciudad.trim().toLowerCase(),
+        recamaras:      recamaras ? Number(recamaras) : null,
+        banos:          banos     ? Number(banos)     : null,
+        m2:             m2        ? Number(m2)        : null,
+        descripcion:    descripcion.trim() || null,
+        imagenes:       allImages,
         activa,
+        caracteristicas,
       })
       .eq('id', prop.id)
 
@@ -268,6 +343,41 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
               className="w-full min-h-[120px] p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-[14px] resize-y leading-relaxed"
               style={{ borderColor: '#EDE4D7', background: '#F0EAE1', color: '#1A1A1A' }}
             />
+          </div>
+
+          {/* ── Métricas del Vecindario ──────────────────────── */}
+          <SectionLabel>Métricas del Vecindario</SectionLabel>
+
+          <div
+            className="rounded-[18px] p-4 flex flex-col gap-3"
+            style={{ border: '1.5px solid #EDE4D7', background: '#FDFAF6' }}
+          >
+            {/* Botón IA */}
+            <button
+              type="button"
+              onClick={handleCalcularMetricas}
+              disabled={loadingMetricas}
+              className="w-full py-3 rounded-[14px] text-[14px] font-bold border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-60 flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #C2714F 0%, #E8A98A 100%)',
+                color: 'white',
+                boxShadow: '0 4px 14px rgba(194,113,79,0.35)',
+              }}
+            >
+              {loadingMetricas
+                ? <><span className="animate-spin text-[16px]">⏳</span> Calculando…</>
+                : <>✨ Calcular métricas por IA</>}
+            </button>
+
+            {/* Sliders */}
+            {METRICAS_LABELS.map(({ key, label }) => (
+              <SliderField
+                key={key}
+                label={label}
+                value={caracteristicas[key]}
+                onChange={(v) => setCaracteristicas((prev) => ({ ...prev, [key]: v }))}
+              />
+            ))}
           </div>
 
           {/* ── Imágenes ─────────────────────────────────────── */}
