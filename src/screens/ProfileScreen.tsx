@@ -7,6 +7,7 @@ import {
   type MatchItem, type PreferenciasForm,
 } from '../services/profileService'
 import type { CitaConDetalles } from '../types/database'
+import ScheduleModal from '../components/ui/ScheduleModal'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ export default function ProfileScreen() {
   const [isComparing,      setIsComparing]      = useState(false)
   const [selectedMatches,  setSelectedMatches]  = useState<string[]>([])
   const [showCompareModal, setShowCompareModal] = useState(false)
+  const [schedProp,        setSchedProp]        = useState<MatchItem | null>(null)
 
   // Preferencias tab state
   const [prefForm, setPrefForm] = useState<PreferenciasForm>({
@@ -606,6 +608,14 @@ export default function ProfileScreen() {
               </button>
             </div>
 
+            {/* FOMO banner */}
+            <div className="mx-5 mt-4 mb-1 p-3 rounded-xl flex items-center gap-2" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+              <span className="text-lg">🔥</span>
+              <p className="text-[12px] font-medium" style={{ color: '#9A3412' }}>
+                ¡Esta zona tiene alta demanda! Los precios han subido un 5% este trimestre.
+              </p>
+            </div>
+
             {/* Snap-scroll carousel — scores + winners computed before render */}
             {(() => {
               const METRIC_LABELS = [
@@ -615,6 +625,7 @@ export default function ProfileScreen() {
               type MetricLabel = typeof METRIC_LABELS[number]
 
               const filtered = matches.filter((m) => selectedMatches.includes(m.swipeId))
+              if (filtered.length === 0) return null
 
               const scoreMap = new Map<string, Record<MetricLabel, number>>()
               for (const m of filtered) {
@@ -638,7 +649,7 @@ export default function ProfileScreen() {
               }
 
               return (
-                <div className="flex overflow-x-auto md:justify-center items-start gap-4 sm:gap-6 px-4 sm:px-8 py-6 no-scrollbar snap-x snap-mandatory md:snap-none md:flex-wrap">
+                <div className="flex overflow-x-auto md:justify-center items-start gap-4 sm:gap-6 px-4 sm:px-8 py-6 pb-[150px] no-scrollbar snap-x snap-mandatory md:snap-none md:flex-wrap">
                   {filtered.map((m) => {
                     const scores = scoreMap.get(m.swipeId)!
                     return (
@@ -743,6 +754,47 @@ export default function ProfileScreen() {
               )
             })()}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Compare modal CTA bar ──────────────────────────────── */}
+      {showCompareModal && selectedMatches.length >= 2 && (() => {
+        const filtered = matches.filter((m) => selectedMatches.includes(m.swipeId))
+        const scoreSum = (m: MatchItem) => {
+          const s = m.property.titulo.length
+          return [0, 1, 2, 3, 4, 5].reduce((acc, i) => acc + ((s + i) % 3) + 3, 0)
+        }
+        const winner = filtered.reduce((best, m) => scoreSum(m) > scoreSum(best) ? m : best, filtered[0])
+        return (
+          <div
+            className="fixed left-4 right-4 md:left-0 md:right-0 md:mx-auto md:max-w-md z-[110] rounded-[20px] px-4 py-3 flex items-center justify-between"
+            style={{ bottom: '24px', background: '#1A1A1A', boxShadow: '0 8px 32px rgba(0,0,0,0.35)' }}
+          >
+            <div className="flex-1 min-w-0 mr-3">
+              <p className="text-[10px] font-semibold uppercase" style={{ color: '#9B9B9B' }}>Ganadora</p>
+              <p className="text-[13px] font-bold text-white truncate">🏆 {winner.property.titulo}</p>
+            </div>
+            <button
+              onClick={() => setSchedProp(winner)}
+              disabled={!session?.user || !winner.property.asesorId}
+              className="flex-shrink-0 px-4 py-2.5 rounded-full text-[13px] font-bold border-none cursor-pointer transition-all active:scale-[.95] disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)', color: 'white' }}
+            >
+              Agendar visita 📅
+            </button>
+          </div>
+        )
+      })()}
+
+      {/* ── Schedule modal (from compare) ──────────────────────── */}
+      <AnimatePresence>
+        {schedProp && session?.user && schedProp.property.asesorId && (
+          <ScheduleModal
+            property={schedProp.property}
+            asesorId={schedProp.property.asesorId}
+            clientId={session.user.id}
+            onDismiss={() => setSchedProp(null)}
+          />
         )}
       </AnimatePresence>
 
