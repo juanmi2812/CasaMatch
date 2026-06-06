@@ -154,8 +154,8 @@ export default function AdvisorDashboard() {
           <p className="text-[12px] font-medium mb-0.5" style={{ color: '#9B9B9B' }}>
             Bienvenido de vuelta,
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-display text-[20px] font-bold truncate" style={{ color: '#1A1A1A' }}>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold break-words" style={{ color: '#1A1A1A' }}>
               {displayName}
             </h1>
             {perfil?.agencia && (
