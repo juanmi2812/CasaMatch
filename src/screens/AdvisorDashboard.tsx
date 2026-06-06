@@ -211,20 +211,20 @@ export default function AdvisorDashboard() {
 
       {/* ── Metrics grid ───────────────────────────────────────── */}
       <div className="px-4 mb-5">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 w-full">
           {metrics.map((m) => (
             <motion.div
               key={m.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="rounded-[20px] p-4"
+              className="rounded-[20px] p-4 min-w-0"
               style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[18px]">{m.icon}</span>
+              <div className="flex items-center justify-between gap-1 flex-wrap mb-2">
+                <span className="text-[18px] flex-shrink-0">{m.icon}</span>
                 <span
-                  className="text-[11px] font-semibold px-2 py-[2px] rounded-full"
+                  className="text-[10px] sm:text-xs font-semibold px-2 py-[2px] rounded-full truncate max-w-[70%]"
                   style={{ background: 'rgba(74,222,128,0.14)', color: '#16A34A' }}
                 >
                   {m.delta}
@@ -233,7 +233,7 @@ export default function AdvisorDashboard() {
               <p className="font-display text-[24px] font-bold leading-none mb-1" style={{ color: '#1A1A1A' }}>
                 {m.value}
               </p>
-              <p className="text-[11px]" style={{ color: '#9B9B9B' }}>{m.label}</p>
+              <p className="text-xs sm:text-sm" style={{ color: '#9B9B9B' }}>{m.label}</p>
             </motion.div>
           ))}
         </div>
