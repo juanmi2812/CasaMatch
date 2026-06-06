@@ -554,7 +554,7 @@ export default function ProfileScreen() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            className="fixed bottom-[90px] left-4 right-4 md:left-0 md:right-0 md:mx-auto md:max-w-md z-40 flex items-center justify-between px-5 py-3.5 rounded-[20px]"
+            className="fixed bottom-[110px] left-4 right-4 md:left-0 md:right-0 md:mx-auto md:max-w-md z-[60] flex items-center justify-between px-5 py-3.5 rounded-[20px]"
             style={{ background: '#1A1A1A', boxShadow: '0 8px 32px rgba(0,0,0,0.30)' }}
           >
             <p className="text-white text-[13px] font-medium">
