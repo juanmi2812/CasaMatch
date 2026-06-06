@@ -606,97 +606,142 @@ export default function ProfileScreen() {
               </button>
             </div>
 
-            {/* Snap-scroll carousel */}
-            <div className="flex overflow-x-auto md:justify-center items-start gap-4 sm:gap-6 px-4 sm:px-8 py-6 no-scrollbar snap-x snap-mandatory md:snap-none md:flex-wrap">
-              {matches
-                .filter((m) => selectedMatches.includes(m.swipeId))
-                .map((m) => {
-                  const seed    = m.property.titulo.length
-                  const plusval = (seed % 3) + 3
-                  const segur   = ((seed + 1) % 3) + 3
-                  const tranq   = ((seed + 2) % 3) + 3
-                  const metricas = [
-                    { label: 'Plusvalía',   score: plusval },
-                    { label: 'Seguridad',   score: segur   },
-                    { label: 'Tranquilidad', score: tranq  },
-                  ]
-                  return (
-                    <div
-                      key={m.swipeId}
-                      className="relative w-[85vw] sm:w-[320px] md:w-[380px] flex-shrink-0 snap-center bg-white rounded-[24px] overflow-hidden shadow-xl flex flex-col"
-                    >
-                      {/* Image */}
+            {/* Snap-scroll carousel — scores + winners computed before render */}
+            {(() => {
+              const METRIC_LABELS = [
+                'Plusvalía', 'Seguridad', 'Tranquilidad',
+                'Vida social', 'Sin tráfico', 'Servicios cerca',
+              ] as const
+              type MetricLabel = typeof METRIC_LABELS[number]
+
+              const filtered = matches.filter((m) => selectedMatches.includes(m.swipeId))
+
+              const scoreMap = new Map<string, Record<MetricLabel, number>>()
+              for (const m of filtered) {
+                const s = m.property.titulo.length
+                scoreMap.set(m.swipeId, {
+                  'Plusvalía':        (s      % 3) + 3,
+                  'Seguridad':        ((s + 1) % 3) + 3,
+                  'Tranquilidad':     ((s + 2) % 3) + 3,
+                  'Vida social':      ((s + 3) % 3) + 3,
+                  'Sin tráfico':      ((s + 4) % 3) + 3,
+                  'Servicios cerca':  ((s + 5) % 3) + 3,
+                })
+              }
+
+              // winner per metric: swipeId of sole leader, null on tie
+              const winnerMap: Record<MetricLabel, string | null> = {} as Record<MetricLabel, string | null>
+              for (const label of METRIC_LABELS) {
+                const max = Math.max(...filtered.map((m) => scoreMap.get(m.swipeId)![label]))
+                const leaders = filtered.filter((m) => scoreMap.get(m.swipeId)![label] === max)
+                winnerMap[label] = leaders.length === 1 ? leaders[0].swipeId : null
+              }
+
+              return (
+                <div className="flex overflow-x-auto md:justify-center items-start gap-4 sm:gap-6 px-4 sm:px-8 py-6 no-scrollbar snap-x snap-mandatory md:snap-none md:flex-wrap">
+                  {filtered.map((m) => {
+                    const scores = scoreMap.get(m.swipeId)!
+                    return (
                       <div
-                        className="w-full h-[200px] flex-shrink-0"
-                        style={{
-                          ...(m.property.imagenes?.[0]
-                            ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                            : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
-                        }}
-                      />
+                        key={m.swipeId}
+                        className="relative w-[85vw] sm:w-[320px] md:w-[380px] flex-shrink-0 snap-center bg-white rounded-[24px] overflow-hidden shadow-xl flex flex-col"
+                      >
+                        {/* Image */}
+                        <div
+                          className="w-full h-[200px] flex-shrink-0"
+                          style={{
+                            ...(m.property.imagenes?.[0]
+                              ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                              : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
+                          }}
+                        />
 
-                      {/* Info */}
-                      <div className="p-4 flex flex-col gap-3">
-                        <div>
-                          <p className="text-[15px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
-                            {m.property.titulo}
-                          </p>
-                          <p className="text-[17px] font-extrabold mt-0.5" style={{ color: '#C2714F' }}>
-                            {fmtPrice(m.property.precio)}
-                          </p>
-                          {m.property.ciudad && (
-                            <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
-                              📍 {m.property.ciudad}
+                        {/* Info */}
+                        <div className="p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="text-[15px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
+                              {m.property.titulo}
                             </p>
-                          )}
-                        </div>
+                            <p className="text-[17px] font-extrabold mt-0.5" style={{ color: '#C2714F' }}>
+                              {fmtPrice(m.property.precio)}
+                            </p>
+                            {m.property.ciudad && (
+                              <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
+                                📍 {m.property.ciudad}
+                              </p>
+                            )}
+                          </div>
 
-                        {/* Attributes grid */}
-                        <div className="grid grid-cols-3 gap-2">
-                          {([
-                            { icon: '🛏', label: 'Recámaras', value: m.property.recamaras != null ? String(m.property.recamaras) : 'N/D' },
-                            { icon: '🚿', label: 'Baños',     value: m.property.banos      != null ? String(m.property.banos)      : 'N/D' },
-                            { icon: '📐', label: 'm²',        value: m.property.m2         != null ? String(m.property.m2)         : 'N/D' },
-                          ] as const).map((attr) => (
-                            <div
-                              key={attr.label}
-                              className="flex flex-col items-center justify-center rounded-[14px] py-3 gap-1"
-                              style={{ background: '#F5EFE6' }}
-                            >
-                              <span className="text-[20px]">{attr.icon}</span>
-                              <span className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>{attr.value}</span>
-                              <span className="text-[10px]" style={{ color: '#9B9B9B' }}>{attr.label}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Métricas de la Zona */}
-                        <div className="mt-4">
-                          <p className="text-xs font-bold uppercase mb-2" style={{ color: '#9B9B9B' }}>
-                            Métricas de la Zona
-                          </p>
-                          <div className="flex flex-col gap-2">
-                            {metricas.map((met) => (
-                              <div key={met.label}>
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-[12px] font-medium" style={{ color: '#4A4A4A' }}>{met.label}</span>
-                                  <span className="text-[12px] font-bold" style={{ color: '#C2714F' }}>{met.score}/5</span>
-                                </div>
-                                <div className="w-full h-1.5 rounded-full" style={{ background: '#EDE4D7' }}>
-                                  <div
-                                    className="h-1.5 rounded-full transition-all"
-                                    style={{ width: `${(met.score / 5) * 100}%`, background: '#C2714F' }}
-                                  />
-                                </div>
+                          {/* Attributes grid */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {([
+                              { icon: '🛏', label: 'Recámaras', value: m.property.recamaras != null ? String(m.property.recamaras) : 'N/D' },
+                              { icon: '🚿', label: 'Baños',     value: m.property.banos      != null ? String(m.property.banos)      : 'N/D' },
+                              { icon: '📐', label: 'm²',        value: m.property.m2         != null ? String(m.property.m2)         : 'N/D' },
+                            ] as const).map((attr) => (
+                              <div
+                                key={attr.label}
+                                className="flex flex-col items-center justify-center rounded-[14px] py-3 gap-1"
+                                style={{ background: '#F5EFE6' }}
+                              >
+                                <span className="text-[20px]">{attr.icon}</span>
+                                <span className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>{attr.value}</span>
+                                <span className="text-[10px]" style={{ color: '#9B9B9B' }}>{attr.label}</span>
                               </div>
                             ))}
                           </div>
+
+                          {/* Métricas de la Zona */}
+                          <div className="mt-2">
+                            <p className="text-xs font-bold uppercase mb-3" style={{ color: '#9B9B9B' }}>
+                              Métricas de la Zona
+                            </p>
+                            <div className="flex flex-col gap-3">
+                              {METRIC_LABELS.map((label) => {
+                                const score    = scores[label]
+                                const isWinner = winnerMap[label] === m.swipeId
+                                return (
+                                  <div key={label}>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[12px] font-medium" style={{ color: '#4A4A4A' }}>{label}</span>
+                                        {isWinner && (
+                                          <span
+                                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                                            style={{ background: 'rgba(194,113,79,0.14)', color: '#C2714F' }}
+                                          >
+                                            MEJOR
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span
+                                        className="text-[12px] font-bold"
+                                        style={{ color: isWinner ? '#C2714F' : '#9B9B9B' }}
+                                      >
+                                        {score}/5
+                                      </span>
+                                    </div>
+                                    <div className="w-full h-2 rounded-full" style={{ background: '#EDE4D7' }}>
+                                      <div
+                                        className="h-2 rounded-full transition-all duration-500"
+                                        style={{
+                                          width:      `${(score / 5) * 100}%`,
+                                          background: isWinner ? '#C2714F' : '#C8C0B8',
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-            </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
