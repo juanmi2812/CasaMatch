@@ -64,6 +64,7 @@ function initials(name: string): string {
 export default function AdvisorDashboard() {
   const { session, signOut } = useAuth()
 
+  const [filtroActivo,     setFiltroActivo]    = useState<'todos' | 'propiedades' | 'leads' | 'likes' | 'guardados'>('todos')
   const [perfil,           setPerfil]          = useState<Perfil | null>(null)
   const [kpis,             setKpis]            = useState<KpisAsesor | null>(null)
   const [leads,            setLeads]           = useState<LeadRow[]>([])
@@ -136,11 +137,11 @@ export default function AdvisorDashboard() {
       })
   }, [session, kpisKey])
 
-  const metrics = [
-    { label: 'Propiedades', value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(), delta: '+activas', icon: '🏠' },
-    { label: 'Leads',       value: kpisLoading ? '—' : (kpis?.total_leads       ?? 0).toLocaleString(), delta: 'únicos',  icon: '📩' },
-    { label: 'Likes',       value: kpisLoading ? '—' : (kpis?.total_likes       ?? 0).toLocaleString(), delta: 'total',   icon: '♥'  },
-    { label: 'Guardados',   value: kpisLoading ? '—' : (kpis?.total_saves       ?? 0).toLocaleString(), delta: 'total',   icon: '🔖' },
+  const metrics: { label: string; value: string; delta: string; icon: string; filtro: typeof filtroActivo }[] = [
+    { label: 'Propiedades', value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(), delta: '+activas', icon: '🏠', filtro: 'propiedades' },
+    { label: 'Leads',       value: kpisLoading ? '—' : (kpis?.total_leads       ?? 0).toLocaleString(), delta: 'únicos',  icon: '📩', filtro: 'leads'        },
+    { label: 'Likes',       value: kpisLoading ? '—' : (kpis?.total_likes       ?? 0).toLocaleString(), delta: 'total',   icon: '♥',  filtro: 'likes'        },
+    { label: 'Guardados',   value: kpisLoading ? '—' : (kpis?.total_saves       ?? 0).toLocaleString(), delta: 'total',   icon: '🔖', filtro: 'guardados'    },
   ]
 
   const displayName = perfil?.nombre || 'Asesor Inmobiliario'
@@ -210,37 +211,50 @@ export default function AdvisorDashboard() {
       </div>
 
       {/* ── Metrics grid ───────────────────────────────────────── */}
-      <div className="px-4 mb-5">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 w-full">
-          {metrics.map((m) => (
-            <motion.div
-              key={m.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-[20px] p-4 min-w-0"
-              style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
-            >
-              <div className="flex items-center justify-between gap-1 flex-wrap mb-2">
-                <span className="text-[18px] flex-shrink-0">{m.icon}</span>
-                <span
-                  className="text-[10px] sm:text-xs font-semibold px-2 py-[2px] rounded-full truncate max-w-[70%]"
-                  style={{ background: 'rgba(74,222,128,0.14)', color: '#16A34A' }}
-                >
-                  {m.delta}
-                </span>
-              </div>
-              <p className="font-display text-[24px] font-bold leading-none mb-1" style={{ color: '#1A1A1A' }}>
-                {m.value}
-              </p>
-              <p className="text-xs sm:text-sm" style={{ color: '#9B9B9B' }}>{m.label}</p>
-            </motion.div>
-          ))}
+      <div className="px-4">
+        <div className="grid grid-cols-2 gap-4 mb-6 w-full">
+          {metrics.map((m) => {
+            const isActive = filtroActivo === m.filtro
+            return (
+              <motion.div
+                key={m.label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={() => setFiltroActivo(isActive ? 'todos' : m.filtro)}
+                className={`rounded-[20px] p-4 min-w-0 cursor-pointer transition-all select-none ${isActive ? 'ring-2 ring-orange-500 scale-105' : 'hover:scale-105'}`}
+                style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+              >
+                <div className="flex items-center justify-between gap-1 flex-wrap mb-2">
+                  <span className="text-[18px] flex-shrink-0">{m.icon}</span>
+                  <span
+                    className="text-sm font-semibold px-2 py-[2px] rounded-full"
+                    style={{ background: 'rgba(74,222,128,0.14)', color: '#16A34A' }}
+                  >
+                    {m.delta}
+                  </span>
+                </div>
+                <p className="font-display text-[24px] font-bold leading-none mb-1" style={{ color: '#1A1A1A' }}>
+                  {m.value}
+                </p>
+                <p className="text-sm" style={{ color: '#9B9B9B' }}>{m.label}</p>
+              </motion.div>
+            )
+          })}
         </div>
+
+        {filtroActivo !== 'todos' && (
+          <button
+            onClick={() => setFiltroActivo('todos')}
+            className="mb-6 px-4 py-2 text-sm text-orange-600 bg-orange-50 rounded-full font-medium mx-auto block border-none cursor-pointer"
+          >
+            Limpiar filtro (Mostrar todo)
+          </button>
+        )}
       </div>
 
       {/* ── Leads recientes ────────────────────────────────────── */}
-      <div className="px-4 mb-5">
+      {(filtroActivo === 'todos' || filtroActivo === 'leads') && <div className="px-4 mb-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>
             Leads recientes
@@ -358,10 +372,10 @@ export default function AdvisorDashboard() {
             })}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── Mis propiedades ────────────────────────────────────── */}
-      <div className="px-4 mb-5">
+      {(filtroActivo === 'todos' || filtroActivo === 'propiedades') && <div className="px-4 mb-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>
             Mis propiedades
@@ -448,7 +462,7 @@ export default function AdvisorDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── AI promo card ──────────────────────────────────────── */}
       <div className="px-4 mb-6">
