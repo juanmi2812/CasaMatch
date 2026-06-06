@@ -14,6 +14,7 @@ interface LeadRow {
   id:               string
   tipo_interaccion: string
   creado_en:        string
+  estatus?:         string
   usuario:   { nombre: string; avatar_url: string | null; telefono: string | null } | null
   propiedad: { titulo: string; ciudad: string; tipo: string } | null
 }
@@ -111,7 +112,7 @@ export default function AdvisorDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(supabase as any)
       .from('interacciones_swipes')
-      .select('id, tipo_interaccion, creado_en, usuario:perfiles!usuario_id(nombre,avatar_url,telefono), propiedad:propiedades!propiedad_id(titulo,ciudad,tipo)')
+      .select('id, tipo_interaccion, creado_en, estatus, usuario:perfiles!usuario_id(nombre,avatar_url,telefono), propiedad:propiedades!propiedad_id(titulo,ciudad,tipo)')
       .in('tipo_interaccion', ['like', 'save'])
       .order('creado_en', { ascending: false })
       .limit(8)
@@ -136,6 +137,15 @@ export default function AdvisorDashboard() {
         setPropsLoading(false)
       })
   }, [session, kpisKey])
+
+  async function handleStatusChange(leadId: string, newStatus: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('interacciones_swipes')
+      .update({ estatus: newStatus })
+      .eq('id', leadId)
+    setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, estatus: newStatus } : l))
+  }
 
   const metrics: { label: string; value: string; delta: string; icon: string; filtro: typeof filtroActivo }[] = [
     { label: 'Propiedades', value: kpisLoading ? '—' : (kpis?.total_propiedades ?? 0).toLocaleString(), delta: '+activas', icon: '🏠', filtro: 'propiedades' },
@@ -295,24 +305,27 @@ export default function AdvisorDashboard() {
             style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
           >
             {leads.map((lead, i) => {
-              const hot      = isHot(lead.creado_en)
-              const userName = lead.usuario?.nombre ?? 'Usuario'
+              const hot       = isHot(lead.creado_en)
+              const userName  = lead.usuario?.nombre ?? 'Usuario'
               const propLabel = lead.propiedad
-                ? `${lead.propiedad.ciudad} · ${lead.propiedad.tipo}`
+                ? `${lead.propiedad.titulo ?? ''} · ${lead.propiedad.ciudad} · ${lead.propiedad.tipo}`
                 : '—'
+              const waMsg = encodeURIComponent(
+                `Hola ${userName}, soy ${displayName} de ${perfil?.agencia || 'CasaMatch'}. Vi que te interesó la propiedad: ${propLabel}. ¿En qué te puedo ayudar?`
+              )
               const waLink = lead.usuario?.telefono
-                ? `https://wa.me/${lead.usuario.telefono.replace(/\D/g, '')}`
+                ? `https://wa.me/${lead.usuario.telefono.replace(/\D/g, '')}?text=${waMsg}`
                 : null
 
               return (
                 <div
                   key={lead.id}
-                  className="flex items-center gap-3 px-4 py-3"
+                  className="flex items-start gap-3 px-4 py-3"
                   style={{ borderBottom: i < leads.length - 1 ? '1px solid #F0EAE1' : 'none' }}
                 >
                   {/* Avatar */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden"
+                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden mt-0.5"
                     style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
                   >
                     {lead.usuario?.avatar_url ? (
@@ -338,9 +351,22 @@ export default function AdvisorDashboard() {
                         {hot ? 'Hot' : 'Warm'}
                       </span>
                     </div>
-                    <p className="text-[11px] truncate" style={{ color: '#9B9B9B' }}>
+                    <p className="text-[11px] truncate mb-1.5" style={{ color: '#9B9B9B' }}>
                       {propLabel}
                     </p>
+                    {/* Pipeline status selector */}
+                    <select
+                      value={lead.estatus || 'nuevo'}
+                      onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                      className="text-xs bg-gray-50 border border-gray-200 rounded-md outline-none px-1.5 py-[3px] cursor-pointer"
+                      style={{ color: '#4A4A4A' }}
+                    >
+                      <option value="nuevo">🔵 Nuevo</option>
+                      <option value="contactado">🟡 Contactado</option>
+                      <option value="cita">🟣 Cita agendada</option>
+                      <option value="cierre">🟢 Cierre exitoso</option>
+                      <option value="descartado">⚫ Descartado</option>
+                    </select>
                   </div>
 
                   <div className="text-right flex-shrink-0">
