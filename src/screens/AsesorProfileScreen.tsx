@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 interface Props {
   asesorId:   string
   onBack:     () => void
-  onFallback: () => void  // navigate to feed if detail is unavailable
+  onFallback: () => void
 }
 
 interface AsesorData {
@@ -46,9 +46,9 @@ function initials(name: string): string {
 }
 
 export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Props) {
-  const [asesor,      setAsesor]     = useState<AsesorData | null>(null)
+  const [asesor,      setAsesor]      = useState<AsesorData | null>(null)
   const [propiedades, setPropiedades] = useState<PropCard[]>([])
-  const [loading,     setLoading]    = useState(true)
+  const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
     setLoading(true)
@@ -75,113 +75,136 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
   }, [asesorId])
 
   const name = asesor?.nombre ?? '—'
+  const waLink = asesor?.telefono
+    ? `https://wa.me/${asesor.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${name}, encontré tu perfil en CasaMatch y me gustaría hablar contigo.`)}`
+    : null
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar" style={{ background: '#F5EFE6' }}>
 
-      {/* ── Hero card ────────────────────────────────────────────── */}
-      <div
-        className="relative w-full pb-16 px-6 pt-12 flex flex-col items-center justify-center gap-4"
-        style={{
-          background: 'linear-gradient(160deg, #1A1A1A 0%, #2C2C3E 100%)',
-          boxShadow:  '0 12px 40px rgba(0,0,0,0.22)',
-        }}
-      >
+      {/* ── Header negro ─────────────────────────────────────────── */}
+      <div className="w-full bg-black relative pb-20 pt-16 px-6" style={{ minHeight: 'fit-content' }}>
+
         {/* Back button */}
         <button
           onClick={() => { try { onBack() } catch { onFallback() } }}
-          className="absolute top-4 left-4 z-50 p-4 -ml-1 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
+          className="absolute top-4 left-4 z-50 p-4 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
           style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}
         >
           <span className="text-white text-[16px] font-bold leading-none">←</span>
         </button>
 
-        {/* Avatar */}
-        <div
-          className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white flex-shrink-0"
-          style={{
-            background: asesor?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #E8A98A, #C2714F)',
-            boxShadow:  '0 0 0 4px rgba(255,255,255,0.14)',
-          }}
-        >
-          {loading ? '…' : asesor?.avatar_url ? (
-            <img src={asesor.avatar_url} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            initials(name)
-          )}
-        </div>
+        {/* Content column */}
+        <div className="flex flex-col items-center justify-center gap-5 text-center">
 
-        {/* Name */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold uppercase text-white break-words text-center max-w-[90%] leading-tight">
-          {name}
-        </h1>
-
-        {/* Agency + experience + verified badges */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {asesor?.agencia && (
-            <span
-              className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
-              style={{ background: 'rgba(255,255,255,0.14)' }}
-            >
-              {asesor.agencia}
-            </span>
-          )}
-          {asesor?.anios_experiencia != null && (
-            <span
-              className="px-3 py-1 rounded-full text-[11px] font-semibold"
-              style={{ background: 'rgba(194,113,79,0.30)', color: '#E8A98A' }}
-            >
-              ✦ {asesor.anios_experiencia} años de experiencia
-            </span>
-          )}
-          <span
-            className="px-2 py-[3px] rounded text-[9px] font-black tracking-[0.4px]"
-            style={{ background: '#C2714F', color: 'white' }}
+          {/* Avatar */}
+          <div
+            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white flex-shrink-0"
+            style={{
+              background: asesor?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #E8A98A, #C2714F)',
+              boxShadow:  '0 0 0 4px rgba(255,255,255,0.14)',
+            }}
           >
-            ✓ VERIFICADO
-          </span>
+            {loading ? '…' : asesor?.avatar_url
+              ? <img src={asesor.avatar_url} alt={name} className="w-full h-full object-cover" />
+              : initials(name)
+            }
+          </div>
+
+          {/* Name */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase text-white break-words max-w-[95%] mx-auto leading-none" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+            {name}
+          </h1>
+
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 justify-center mt-2">
+            {asesor?.agencia && (
+              <span
+                className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
+                style={{ background: 'rgba(255,255,255,0.14)' }}
+              >
+                {asesor.agencia}
+              </span>
+            )}
+            {asesor?.anios_experiencia != null && (
+              <span
+                className="px-3 py-1 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(194,113,79,0.30)', color: '#E8A98A' }}
+              >
+                ✦ {asesor.anios_experiencia} años de experiencia
+              </span>
+            )}
+            <span
+              className="px-2 py-[3px] rounded text-[9px] font-black tracking-[0.4px]"
+              style={{ background: '#C2714F', color: 'white' }}
+            >
+              ✓ VERIFICADO
+            </span>
+          </div>
+
+          {/* Social links */}
+          {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {asesor.instagram_url && (
+                <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                  style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}>
+                  📸 Instagram
+                </a>
+              )}
+              {asesor.tiktok_url && (
+                <a href={asesor.tiktok_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                  style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}>
+                  🎵 TikTok
+                </a>
+              )}
+              {asesor.facebook_url && (
+                <a href={asesor.facebook_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                  style={{ background: 'rgba(24,119,242,0.20)', color: '#90B8F8', textDecoration: 'none' }}>
+                  👤 Facebook
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Social links */}
-        {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
-          <div className="flex flex-wrap gap-2 justify-center">
-            {asesor.instagram_url && (
-              <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}>
-                📸 Instagram
-              </a>
-            )}
-            {asesor.tiktok_url && (
-              <a href={asesor.tiktok_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}>
-                🎵 TikTok
-              </a>
-            )}
-            {asesor.facebook_url && (
-              <a href={asesor.facebook_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                style={{ background: 'rgba(24,119,242,0.20)', color: '#90B8F8', textDecoration: 'none' }}>
-                👤 Facebook
-              </a>
-            )}
-          </div>
+        {/* WhatsApp button — floats at the seam between header and content */}
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-0 left-1/2 z-50 flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-[14px] font-semibold text-white"
+            style={{
+              transform:     'translate(-50%, 50%)',
+              background:    '#25D366',
+              textDecoration: 'none',
+              boxShadow:     '0 4px 20px rgba(37,211,102,0.40)',
+              whiteSpace:    'nowrap',
+            }}
+          >
+            💬 Contactar por WhatsApp
+          </a>
         )}
       </div>
 
+      {/* ── Body ─────────────────────────────────────────────────── */}
       {loading && (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-16">
           <span className="text-[32px] animate-pulse">🏡</span>
         </div>
       )}
 
       {!loading && (
-        <>
-          {/* ── Biografia ──────────────────────────────────────────── */}
+        /* mt-10 clears the half-protruding WhatsApp button (~28px) */
+        <div className="mt-10">
+
+          {/* Biografia */}
           {asesor?.biografia && (
             <div
-              className="mx-4 mt-4 rounded-[24px] p-5"
+              className="mx-4 mt-2 rounded-[24px] p-5"
               style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             >
               <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#C2714F' }}>
@@ -193,22 +216,7 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
             </div>
           )}
 
-          {/* ── Contact button ─────────────────────────────────────── */}
-          {asesor?.telefono && (
-            <div className="mx-4 mt-6">
-              <a
-                href={`https://wa.me/${asesor.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${name}, encontré tu perfil en CasaMatch y me gustaría hablar contigo.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-[18px] text-[14px] font-semibold text-white"
-                style={{ background: '#25D366', textDecoration: 'none', boxShadow: '0 4px 16px rgba(37,211,102,0.30)' }}
-              >
-                💬 Contactar por WhatsApp
-              </a>
-            </div>
-          )}
-
-          {/* ── Propiedades activas ────────────────────────────────── */}
+          {/* Propiedades activas */}
           <div className="mx-4 mt-5 mb-8">
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#9B9B9B' }}>
               Propiedades activas · {propiedades.length}
@@ -229,7 +237,6 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
                     className="rounded-[18px] overflow-hidden"
                     style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
                   >
-                    {/* Thumbnail */}
                     <div
                       className="w-full h-[100px] flex items-center justify-center"
                       style={
@@ -256,7 +263,7 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   )
