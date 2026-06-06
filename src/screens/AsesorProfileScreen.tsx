@@ -81,98 +81,93 @@ export default function AsesorProfileScreen({ asesorId, onBack, onFallback }: Pr
 
       {/* ── Hero card ────────────────────────────────────────────── */}
       <div
-        className="relative mx-4 mt-4 rounded-[28px]"
+        className="relative w-full pb-16 px-6 pt-12 flex flex-col items-center justify-center gap-4"
         style={{
-          background:  'linear-gradient(160deg, #1A1A1A 0%, #2C2C3E 100%)',
-          boxShadow:   '0 12px 40px rgba(0,0,0,0.22)',
-          minHeight:   350,
-          overflow:    'hidden',
+          background: 'linear-gradient(160deg, #1A1A1A 0%, #2C2C3E 100%)',
+          boxShadow:  '0 12px 40px rgba(0,0,0,0.22)',
         }}
       >
-        {/* Back button — custom router: onBack → detail, onFallback → feed as safety */}
+        {/* Back button */}
         <button
           onClick={() => { try { onBack() } catch { onFallback() } }}
-          className="absolute top-2 left-2 z-50 p-4 -ml-1 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
+          className="absolute top-4 left-4 z-50 p-4 -ml-1 rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.88]"
           style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}
         >
           <span className="text-white text-[16px] font-bold leading-none">←</span>
         </button>
 
-        {/* Content — grows to fit all children, never clips */}
-        <div className="flex flex-col items-center justify-center gap-2 relative z-10 w-full pt-14 pb-8 px-6">
-          {/* Avatar */}
-          <div
-            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white flex-shrink-0"
-            style={{
-              background: asesor?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #E8A98A, #C2714F)',
-              boxShadow:  '0 0 0 4px rgba(255,255,255,0.14)',
-            }}
-          >
-            {loading ? '…' : asesor?.avatar_url ? (
-              <img src={asesor.avatar_url} alt={name} className="w-full h-full object-cover" />
-            ) : (
-              initials(name)
-            )}
-          </div>
-
-          {/* Name */}
-          <h1 className="font-display text-[22px] font-bold text-white text-center leading-tight mt-2">
-            {name}
-          </h1>
-
-          {/* Agency + experience + verified badges */}
-          <div className="flex flex-wrap justify-center items-center gap-2 w-full">
-            {asesor?.agencia && (
-              <span
-                className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
-                style={{ background: 'rgba(255,255,255,0.14)' }}
-              >
-                {asesor.agencia}
-              </span>
-            )}
-            {asesor?.anios_experiencia != null && (
-              <span
-                className="px-3 py-1 rounded-full text-[11px] font-semibold"
-                style={{ background: 'rgba(194,113,79,0.30)', color: '#E8A98A' }}
-              >
-                ✦ {asesor.anios_experiencia} años de experiencia
-              </span>
-            )}
-            <span
-              className="px-2 py-[3px] rounded text-[9px] font-black tracking-[0.4px]"
-              style={{ background: '#C2714F', color: 'white' }}
-            >
-              ✓ VERIFICADO
-            </span>
-          </div>
-
-          {/* Social links */}
-          {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
-            <div className="flex flex-wrap gap-2 justify-center mt-1">
-              {asesor.instagram_url && (
-                <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                  style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}>
-                  📸 Instagram
-                </a>
-              )}
-              {asesor.tiktok_url && (
-                <a href={asesor.tiktok_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                  style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}>
-                  🎵 TikTok
-                </a>
-              )}
-              {asesor.facebook_url && (
-                <a href={asesor.facebook_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
-                  style={{ background: 'rgba(24,119,242,0.20)', color: '#90B8F8', textDecoration: 'none' }}>
-                  👤 Facebook
-                </a>
-              )}
-            </div>
+        {/* Avatar */}
+        <div
+          className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center font-display text-[28px] font-bold text-white flex-shrink-0"
+          style={{
+            background: asesor?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #E8A98A, #C2714F)',
+            boxShadow:  '0 0 0 4px rgba(255,255,255,0.14)',
+          }}
+        >
+          {loading ? '…' : asesor?.avatar_url ? (
+            <img src={asesor.avatar_url} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            initials(name)
           )}
         </div>
+
+        {/* Name */}
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold uppercase text-white break-words text-center max-w-[90%] leading-tight">
+          {name}
+        </h1>
+
+        {/* Agency + experience + verified badges */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          {asesor?.agencia && (
+            <span
+              className="px-3 py-1 rounded-full text-[11px] font-semibold text-white"
+              style={{ background: 'rgba(255,255,255,0.14)' }}
+            >
+              {asesor.agencia}
+            </span>
+          )}
+          {asesor?.anios_experiencia != null && (
+            <span
+              className="px-3 py-1 rounded-full text-[11px] font-semibold"
+              style={{ background: 'rgba(194,113,79,0.30)', color: '#E8A98A' }}
+            >
+              ✦ {asesor.anios_experiencia} años de experiencia
+            </span>
+          )}
+          <span
+            className="px-2 py-[3px] rounded text-[9px] font-black tracking-[0.4px]"
+            style={{ background: '#C2714F', color: 'white' }}
+          >
+            ✓ VERIFICADO
+          </span>
+        </div>
+
+        {/* Social links */}
+        {(asesor?.instagram_url || asesor?.tiktok_url || asesor?.facebook_url) && (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {asesor.instagram_url && (
+              <a href={asesor.instagram_url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(225,48,108,0.18)', color: '#E8A98A', textDecoration: 'none' }}>
+                📸 Instagram
+              </a>
+            )}
+            {asesor.tiktok_url && (
+              <a href={asesor.tiktok_url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(255,255,255,0.12)', color: 'white', textDecoration: 'none' }}>
+                🎵 TikTok
+              </a>
+            )}
+            {asesor.facebook_url && (
+              <a href={asesor.facebook_url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold"
+                style={{ background: 'rgba(24,119,242,0.20)', color: '#90B8F8', textDecoration: 'none' }}>
+                👤 Facebook
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {loading && (
