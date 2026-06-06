@@ -67,6 +67,11 @@ export default function ProfileScreen() {
   const [matchesLoading, setMatchesLoading] = useState(false)
   const [matchesLoaded,  setMatchesLoaded]  = useState(false)
 
+  // Comparator state
+  const [isComparing,      setIsComparing]      = useState(false)
+  const [selectedMatches,  setSelectedMatches]  = useState<string[]>([])
+  const [showCompareModal, setShowCompareModal] = useState(false)
+
   // Preferencias tab state
   const [prefForm, setPrefForm] = useState<PreferenciasForm>({
     ciudad: '', tipo_propiedad: '', presupuesto_min: null, presupuesto_max: null,
@@ -144,6 +149,23 @@ export default function ProfileScreen() {
     } finally {
       setPrefSaving(false)
     }
+  }
+
+  function toggleSelectMatch(swipeId: string) {
+    setSelectedMatches((prev) =>
+      prev.includes(swipeId) ? prev.filter((id) => id !== swipeId) : [...prev, swipeId]
+    )
+  }
+
+  function handleStartCompare() {
+    setIsComparing(true)
+    setSelectedMatches([])
+  }
+
+  function handleCancelCompare() {
+    setIsComparing(false)
+    setSelectedMatches([])
+    setShowCompareModal(false)
   }
 
   const displayName   = nombre ?? session?.user.email?.split('@')[0] ?? 'Usuario'
@@ -230,42 +252,83 @@ export default function ProfileScreen() {
               )}
 
               {!matchesLoading && matches.length > 0 && (
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {matches.map((m) => (
-                    <div
-                      key={m.swipeId}
-                      className="relative rounded-[16px] overflow-hidden"
-                      style={{ background: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}
+                <>
+                  {/* Compare / Cancel toggle */}
+                  <div className="flex justify-between items-center pt-2 pb-2">
+                    <p className="text-[12px]" style={{ color: '#9B9B9B' }}>
+                      {matches.length} match{matches.length !== 1 ? 'es' : ''} guardado{matches.length !== 1 ? 's' : ''}
+                    </p>
+                    <button
+                      onClick={isComparing ? handleCancelCompare : handleStartCompare}
+                      className="text-[12px] px-3 py-1.5 rounded-full border-none cursor-pointer font-semibold transition-all active:scale-[.95]"
+                      style={{
+                        background: isComparing ? 'rgba(220,38,38,0.10)' : 'rgba(194,113,79,0.12)',
+                        color:      isComparing ? '#DC2626'               : '#C2714F',
+                      }}
                     >
-                      {/* Property image */}
-                      <div
-                        className="w-full h-[108px] relative"
-                        style={{
-                          ...(m.property.imagenes?.[0]
-                            ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                            : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
-                        }}
-                      >
-                        <button
-                          onClick={() => handleRemoveMatch(m.swipeId)}
-                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer text-white text-[11px]"
-                          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+                      {isComparing ? '✕ Cancelar' : '⚖️ Comparar'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {matches.map((m) => {
+                      const isSelected = selectedMatches.includes(m.swipeId)
+                      return (
+                        <div
+                          key={m.swipeId}
+                          className={`relative rounded-[16px] overflow-hidden transition-all duration-150 ${isComparing ? 'cursor-pointer' : ''}`}
+                          style={{
+                            background:  'white',
+                            boxShadow:   '0 2px 10px rgba(0,0,0,0.08)',
+                            outline:     isSelected ? '3px solid #f97316' : 'none',
+                            outlineOffset: '2px',
+                            transform:   isSelected ? 'scale(1.02)' : 'scale(1)',
+                          }}
+                          onClick={isComparing ? () => toggleSelectMatch(m.swipeId) : undefined}
                         >
-                          ✕
-                        </button>
-                      </div>
-                      {/* Info */}
-                      <div className="p-2.5">
-                        <p className="text-[12px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
-                          {m.property.titulo}
-                        </p>
-                        <p className="text-[11px] font-bold" style={{ color: '#C2714F' }}>
-                          {fmtPrice(m.property.precio)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                          {/* Property image */}
+                          <div
+                            className="w-full h-[108px] relative"
+                            style={{
+                              ...(m.property.imagenes?.[0]
+                                ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                                : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
+                            }}
+                          >
+                            {/* Remove button — hidden while comparing */}
+                            {!isComparing && (
+                              <button
+                                onClick={() => handleRemoveMatch(m.swipeId)}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer text-white text-[11px]"
+                                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                            {/* Selection overlay */}
+                            {isComparing && isSelected && (
+                              <div
+                                className="absolute inset-0 flex items-center justify-center"
+                                style={{ background: 'rgba(0,0,0,0.35)' }}
+                              >
+                                <span className="text-[32px]">✅</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Info */}
+                          <div className="p-2.5">
+                            <p className="text-[12px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                              {m.property.titulo}
+                            </p>
+                            <p className="text-[11px] font-bold" style={{ color: '#C2714F' }}>
+                              {fmtPrice(m.property.precio)}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </motion.div>
           )}
@@ -482,6 +545,135 @@ export default function ProfileScreen() {
 
         </AnimatePresence>
       </div>
+
+      {/* ── Floating comparator action bar ─────────────────────── */}
+      <AnimatePresence>
+        {isComparing && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+            className="fixed left-4 right-4 z-40 flex items-center justify-between px-5 py-3.5 rounded-[20px]"
+            style={{ bottom: '90px', background: '#1A1A1A', boxShadow: '0 8px 32px rgba(0,0,0,0.30)' }}
+          >
+            <p className="text-white text-[13px] font-medium">
+              {selectedMatches.length === 0
+                ? 'Selecciona propiedades'
+                : `${selectedMatches.length} seleccionada${selectedMatches.length !== 1 ? 's' : ''}`}
+            </p>
+            <button
+              disabled={selectedMatches.length < 2}
+              onClick={() => setShowCompareModal(true)}
+              className="px-5 py-2 rounded-full text-[13px] font-bold border-none cursor-pointer transition-all active:scale-[.95] disabled:opacity-40"
+              style={{ background: '#C2714F', color: 'white' }}
+            >
+              Comparar →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Compare modal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCompareModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.20 }}
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ background: '#0A0A0A' }}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 pt-[52px] pb-4 flex-shrink-0">
+              <h2 className="text-white text-[18px] font-bold">
+                Comparando {selectedMatches.length} propiedades
+              </h2>
+              <button
+                onClick={handleCancelCompare}
+                className="text-white text-[13px] px-4 py-2 rounded-full border-none cursor-pointer font-semibold"
+                style={{ background: 'rgba(255,255,255,0.12)' }}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {/* Snap-scroll carousel */}
+            <div
+              className="flex-1 flex overflow-x-auto gap-4 px-5 pb-10 items-start pt-2"
+              style={{
+                scrollSnapType:  'x mandatory',
+                scrollbarWidth:  'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              {matches
+                .filter((m) => selectedMatches.includes(m.swipeId))
+                .map((m) => (
+                  <div
+                    key={m.swipeId}
+                    className="flex-shrink-0 rounded-[24px] overflow-hidden flex flex-col"
+                    style={{
+                      scrollSnapAlign: 'center',
+                      width:           '80vw',
+                      maxWidth:        '320px',
+                      background:      'white',
+                      boxShadow:       '0 4px 24px rgba(0,0,0,0.20)',
+                    }}
+                  >
+                    {/* Image */}
+                    <div
+                      className="w-full h-[200px] flex-shrink-0"
+                      style={{
+                        ...(m.property.imagenes?.[0]
+                          ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                          : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
+                      }}
+                    />
+
+                    {/* Info */}
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <p className="text-[15px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
+                          {m.property.titulo}
+                        </p>
+                        <p className="text-[17px] font-extrabold mt-0.5" style={{ color: '#C2714F' }}>
+                          {fmtPrice(m.property.precio)}
+                        </p>
+                        {m.property.ciudad && (
+                          <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
+                            📍 {m.property.ciudad}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Attributes grid */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { icon: '🛏', label: 'Recámaras', value: m.property.recamaras != null ? String(m.property.recamaras) : 'N/D' },
+                          { icon: '🚿', label: 'Baños',     value: m.property.banos      != null ? String(m.property.banos)      : 'N/D' },
+                          { icon: '📐', label: 'm²',        value: m.property.m2         != null ? String(m.property.m2)         : 'N/D' },
+                        ] as const).map((attr) => (
+                          <div
+                            key={attr.label}
+                            className="flex flex-col items-center justify-center rounded-[14px] py-3 gap-1"
+                            style={{ background: '#F5EFE6' }}
+                          >
+                            <span className="text-[20px]">{attr.icon}</span>
+                            <span className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>{attr.value}</span>
+                            <span className="text-[10px]" style={{ color: '#9B9B9B' }}>{attr.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }
