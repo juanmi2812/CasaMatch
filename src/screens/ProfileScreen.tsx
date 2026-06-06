@@ -582,93 +582,120 @@ export default function ProfileScreen() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.20 }}
-            className="fixed inset-0 z-50 flex flex-col"
-            style={{ background: '#0A0A0A' }}
+            className="fixed inset-0 z-[100] flex flex-col bg-[#F5EFE6] overflow-y-auto"
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 pt-[52px] pb-4 flex-shrink-0">
-              <h2 className="text-white text-[18px] font-bold">
-                Comparando {selectedMatches.length} propiedades
-              </h2>
+            <div
+              className="flex items-center justify-between px-5 pt-[52px] pb-4 flex-shrink-0"
+              style={{ borderBottom: '1px solid #EDE4D7' }}
+            >
+              <div>
+                <h2 className="text-[18px] font-bold" style={{ color: '#1A1A1A' }}>
+                  ⚖️ Comparar propiedades
+                </h2>
+                <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
+                  {selectedMatches.length} seleccionadas · desliza para ver más
+                </p>
+              </div>
               <button
                 onClick={handleCancelCompare}
-                className="text-white text-[13px] px-4 py-2 rounded-full border-none cursor-pointer font-semibold"
-                style={{ background: 'rgba(255,255,255,0.12)' }}
+                className="text-[13px] px-5 py-2.5 rounded-full border-none cursor-pointer font-bold transition-all active:scale-[.95]"
+                style={{ background: '#1A1A1A', color: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.18)' }}
               >
-                Cerrar
+                ✕ Cerrar
               </button>
             </div>
 
             {/* Snap-scroll carousel */}
-            <div
-              className="flex-1 flex overflow-x-auto gap-4 px-5 pb-10 items-start pt-2"
-              style={{
-                scrollSnapType:  'x mandatory',
-                scrollbarWidth:  'none',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            >
+            <div className="flex overflow-x-auto md:justify-center items-start gap-4 sm:gap-6 px-4 sm:px-8 py-6 no-scrollbar snap-x snap-mandatory md:snap-none md:flex-wrap">
               {matches
                 .filter((m) => selectedMatches.includes(m.swipeId))
-                .map((m) => (
-                  <div
-                    key={m.swipeId}
-                    className="flex-shrink-0 rounded-[24px] overflow-hidden flex flex-col"
-                    style={{
-                      scrollSnapAlign: 'center',
-                      width:           '80vw',
-                      maxWidth:        '320px',
-                      background:      'white',
-                      boxShadow:       '0 4px 24px rgba(0,0,0,0.20)',
-                    }}
-                  >
-                    {/* Image */}
+                .map((m) => {
+                  const seed    = m.property.titulo.length
+                  const plusval = (seed % 3) + 3
+                  const segur   = ((seed + 1) % 3) + 3
+                  const tranq   = ((seed + 2) % 3) + 3
+                  const metricas = [
+                    { label: 'Plusvalía',   score: plusval },
+                    { label: 'Seguridad',   score: segur   },
+                    { label: 'Tranquilidad', score: tranq  },
+                  ]
+                  return (
                     <div
-                      className="w-full h-[200px] flex-shrink-0"
-                      style={{
-                        ...(m.property.imagenes?.[0]
-                          ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                          : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
-                      }}
-                    />
+                      key={m.swipeId}
+                      className="relative w-[85vw] sm:w-[320px] md:w-[380px] flex-shrink-0 snap-center bg-white rounded-[24px] overflow-hidden shadow-xl flex flex-col"
+                    >
+                      {/* Image */}
+                      <div
+                        className="w-full h-[200px] flex-shrink-0"
+                        style={{
+                          ...(m.property.imagenes?.[0]
+                            ? { backgroundImage: `url(${m.property.imagenes[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                            : { background: `linear-gradient(135deg, ${m.property.gradientFrom}, ${m.property.gradientTo})` }),
+                        }}
+                      />
 
-                    {/* Info */}
-                    <div className="p-4 flex flex-col gap-3">
-                      <div>
-                        <p className="text-[15px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
-                          {m.property.titulo}
-                        </p>
-                        <p className="text-[17px] font-extrabold mt-0.5" style={{ color: '#C2714F' }}>
-                          {fmtPrice(m.property.precio)}
-                        </p>
-                        {m.property.ciudad && (
-                          <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
-                            📍 {m.property.ciudad}
+                      {/* Info */}
+                      <div className="p-4 flex flex-col gap-3">
+                        <div>
+                          <p className="text-[15px] font-bold leading-tight" style={{ color: '#1A1A1A' }}>
+                            {m.property.titulo}
                           </p>
-                        )}
-                      </div>
+                          <p className="text-[17px] font-extrabold mt-0.5" style={{ color: '#C2714F' }}>
+                            {fmtPrice(m.property.precio)}
+                          </p>
+                          {m.property.ciudad && (
+                            <p className="text-[12px] mt-0.5" style={{ color: '#9B9B9B' }}>
+                              📍 {m.property.ciudad}
+                            </p>
+                          )}
+                        </div>
 
-                      {/* Attributes grid */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {([
-                          { icon: '🛏', label: 'Recámaras', value: m.property.recamaras != null ? String(m.property.recamaras) : 'N/D' },
-                          { icon: '🚿', label: 'Baños',     value: m.property.banos      != null ? String(m.property.banos)      : 'N/D' },
-                          { icon: '📐', label: 'm²',        value: m.property.m2         != null ? String(m.property.m2)         : 'N/D' },
-                        ] as const).map((attr) => (
-                          <div
-                            key={attr.label}
-                            className="flex flex-col items-center justify-center rounded-[14px] py-3 gap-1"
-                            style={{ background: '#F5EFE6' }}
-                          >
-                            <span className="text-[20px]">{attr.icon}</span>
-                            <span className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>{attr.value}</span>
-                            <span className="text-[10px]" style={{ color: '#9B9B9B' }}>{attr.label}</span>
+                        {/* Attributes grid */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {([
+                            { icon: '🛏', label: 'Recámaras', value: m.property.recamaras != null ? String(m.property.recamaras) : 'N/D' },
+                            { icon: '🚿', label: 'Baños',     value: m.property.banos      != null ? String(m.property.banos)      : 'N/D' },
+                            { icon: '📐', label: 'm²',        value: m.property.m2         != null ? String(m.property.m2)         : 'N/D' },
+                          ] as const).map((attr) => (
+                            <div
+                              key={attr.label}
+                              className="flex flex-col items-center justify-center rounded-[14px] py-3 gap-1"
+                              style={{ background: '#F5EFE6' }}
+                            >
+                              <span className="text-[20px]">{attr.icon}</span>
+                              <span className="text-[14px] font-bold" style={{ color: '#1A1A1A' }}>{attr.value}</span>
+                              <span className="text-[10px]" style={{ color: '#9B9B9B' }}>{attr.label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Métricas de la Zona */}
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase mb-2" style={{ color: '#9B9B9B' }}>
+                            Métricas de la Zona
+                          </p>
+                          <div className="flex flex-col gap-2">
+                            {metricas.map((met) => (
+                              <div key={met.label}>
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-[12px] font-medium" style={{ color: '#4A4A4A' }}>{met.label}</span>
+                                  <span className="text-[12px] font-bold" style={{ color: '#C2714F' }}>{met.score}/5</span>
+                                </div>
+                                <div className="w-full h-1.5 rounded-full" style={{ background: '#EDE4D7' }}>
+                                  <div
+                                    className="h-1.5 rounded-full transition-all"
+                                    style={{ width: `${(met.score / 5) * 100}%`, background: '#C2714F' }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </motion.div>
         )}
