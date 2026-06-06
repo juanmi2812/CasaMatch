@@ -9,7 +9,9 @@
       "Bash(git push *)",
       "Bash(vercel --version)",
       "Bash(npx vercel *)",
-      "Bash(vercel deploy *)"
+      "Bash(vercel deploy *)",
+      "Bash(node -e \"const fs=require\\('fs'\\); const src=fs.readFileSync\\('src/lib/aiClient.ts','utf8'\\); const fn = new Function\\('return ' + src.match\\(/\\\\.replace\\\\\\(\\([^\\)]+\\)\\\\\\)/\\)[1]\\)\\(\\); console.log\\('regex ok'\\)\")",
+      "Bash(node -e \"const s='Juriquilla, Querétaro'; const t=s.toLowerCase\\(\\).normalize\\('NFD'\\).replace\\(/[̀-ͯ]/g,''\\); console.log\\(t, t.includes\\('juriquilla'\\)\\)\")"
     ]
   }
 }

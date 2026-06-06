@@ -181,6 +181,10 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
   }
 
   async function handleCalcularMetricas() {
+    if (!ubicacion.trim()) {
+      alert('Por favor, ingresa una ubicación primero.')
+      return
+    }
     setLoadingMetricas(true)
     setError(null)
     try {

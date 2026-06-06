@@ -88,6 +88,10 @@ export default function NewPropertyModal({ onDismiss, onCreated }: Props) {
   }
 
   async function handleCalcularMetricas() {
+    if (!ubicacion.trim()) {
+      alert('Por favor, ingresa una ubicación primero.')
+      return
+    }
     setLoadingMetricas(true)
     setError(null)
     try {
