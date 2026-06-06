@@ -30,6 +30,7 @@ interface DraggableCardProps {
   onSwipeLeft:    () => void
   onSwipeRight:   () => void
   onAuthRequired: () => void
+  onShowMatch?:   () => void
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ function formatPrice(n: number): string {
 // ─── DraggableCard ────────────────────────────────────────────────────────────
 
 const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
-  ({ card, isTop, requiresAuth, onSwipeLeft, onSwipeRight, onAuthRequired }, ref) => {
+  ({ card, isTop, requiresAuth, onSwipeLeft, onSwipeRight, onAuthRequired, onShowMatch }, ref) => {
     const x         = useMotionValue(0)
     const rotate    = useTransform(x, [-300, 0, 300], [-16, 0, 16])
     const likeAlpha = useTransform(x, [40, 130], [0, 1])
@@ -171,16 +172,18 @@ const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
 
           {/* Compatibility badge */}
           <div className="absolute top-5 right-5 z-10">
-            <div
-              className="px-3 py-1.5 rounded-full text-white text-[12px] font-bold tracking-[0.3px]"
+            <button
+              className="px-3 py-1.5 rounded-full text-white text-[12px] font-bold tracking-[0.3px] cursor-pointer transition-all active:scale-95 border-none pointer-events-auto"
               style={{
                 background:     'rgba(255,255,255,0.18)',
                 backdropFilter: 'blur(14px)',
                 border:         '1px solid rgba(255,255,255,0.28)',
               }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onShowMatch?.() }}
             >
               ✦ {card.compatibilidad}% match
-            </div>
+            </button>
           </div>
 
           {/* Property info */}
@@ -304,13 +307,14 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
   const { session } = useAuth()
   const isAuthenticated = !!session
 
-  const [cards,         setCards]        = useState<PropiedadMock[]>([])
-  const [loading,       setLoading]      = useState(true)
-  const [fetchKey,      setFetchKey]     = useState(0)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [pendingAction, setPendingAction] = useState<'like' | null>(null)
-  const [activeFilter,  setActiveFilter] = useState<FilterTab>(() => tipoToFilter(tipoInicial))
-  const [showToast,     setShowToast]    = useState(false)
+  const [cards,            setCards]           = useState<PropiedadMock[]>([])
+  const [loading,          setLoading]         = useState(true)
+  const [fetchKey,         setFetchKey]        = useState(0)
+  const [showAuthModal,    setShowAuthModal]   = useState(false)
+  const [pendingAction,    setPendingAction]   = useState<'like' | null>(null)
+  const [activeFilter,     setActiveFilter]    = useState<FilterTab>(() => tipoToFilter(tipoInicial))
+  const [showToast,        setShowToast]       = useState(false)
+  const [matchExplanation, setMatchExplanation] = useState<PropiedadMock | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -495,6 +499,7 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
               onSwipeLeft={removeTopCard}
               onSwipeRight={handleSwipeRight}
               onAuthRequired={handleAuthRequired}
+              onShowMatch={() => setMatchExplanation(cards[0])}
             />
           </>
         )}
@@ -561,6 +566,96 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
       <AnimatePresence>
         {showToast && (
           <Toast message="🔗 Enlace copiado" onDismiss={() => setShowToast(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Match Explanation Bottom Sheet */}
+      <AnimatePresence>
+        {matchExplanation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMatchExplanation(null)}
+            className="absolute inset-0 z-50"
+            style={{ background: 'rgba(0,0,0,0.60)' }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-0 left-0 right-0 rounded-t-[32px] p-6"
+              style={{ background: 'white', maxHeight: '85%', overflowY: 'auto' }}
+            >
+              {/* Handle */}
+              <div className="flex justify-center mb-4">
+                <div className="w-10 h-1 rounded-full" style={{ background: '#E2D9D0' }} />
+              </div>
+
+              {/* Title */}
+              <h2 className="font-display text-2xl font-bold mb-4" style={{ color: '#1A1A1A' }}>
+                ✨ ¿Por qué es un {matchExplanation.compatibilidad}% Match?
+              </h2>
+
+              {/* Criteria checkmarks */}
+              <div className="flex flex-col gap-2.5 mb-5">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[18px]">✅</span>
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: '#1A1A1A' }}>
+                      Presupuesto: {formatPrice(matchExplanation.precio)}
+                    </p>
+                    <p className="text-[11px]" style={{ color: '#9B9B9B' }}>Dentro de tu rango</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[18px]">✅</span>
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: '#1A1A1A' }}>
+                      Zona: {matchExplanation.ciudad.charAt(0).toUpperCase() + matchExplanation.ciudad.slice(1)}
+                    </p>
+                    <p className="text-[11px]" style={{ color: '#9B9B9B' }}>Coincide con tu búsqueda</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI metrics */}
+              <p className="text-[12px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#C2714F' }}>
+                🤖 Evaluación de Inteligencia Artificial
+              </p>
+              <div className="flex flex-col gap-3 mb-6">
+                {([
+                  { label: 'Tranquilidad',    value: matchExplanation.caracteristicas.tranquilidad    },
+                  { label: 'Seguridad',       value: matchExplanation.caracteristicas.seguridad       },
+                  { label: 'Plusvalía',       value: matchExplanation.caracteristicas.plusvalia        },
+                ] as { label: string; value: number }[]).map(({ label, value }) => (
+                  <div key={label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[12px] font-medium" style={{ color: '#4A4A4A' }}>{label}</span>
+                      <span className="text-[12px] font-bold" style={{ color: '#C2714F' }}>{value}/5</span>
+                    </div>
+                    <div className="h-[6px] rounded-full w-full" style={{ background: '#F0EAE1' }}>
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${(value / 5) * 100}%`, background: '#C2714F' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={() => setMatchExplanation(null)}
+                className="w-full py-4 rounded-full text-[15px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+                style={{ background: '#C2714F' }}
+              >
+                Entendido
+              </button>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
