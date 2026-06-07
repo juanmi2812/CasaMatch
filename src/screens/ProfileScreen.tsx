@@ -597,7 +597,7 @@ export default function ProfileScreen() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.20 }}
-            className="fixed inset-0 z-[100] flex flex-col bg-[#F5EFE6] overflow-y-auto"
+            className="fixed inset-0 z-[999] flex flex-col bg-[#F5EFE6] overflow-y-auto"
           >
             {/* Modal header */}
             <div
@@ -781,50 +781,38 @@ export default function ProfileScreen() {
           (best, m) => scoreSum(m.property.titulo) > scoreSum(best.property.titulo) ? m : best,
           filtered[0],
         )
-        const chosen = matches.find((m) => m.swipeId === propiedadElegida) ?? winner
-
-        function handleAgendar() {
-          const tel = chosen.property.asesorId
-            ? null  // asesorId is a UUID, not a phone — use alert fallback
-            : null
-          if (tel) {
-            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(`Hola, me interesa agendar una visita para: ${chosen.property.titulo}`)}`, '_blank')
-          } else {
-            alert(`Abriendo agenda para la propiedad seleccionada: ${chosen.property.titulo}`)
-          }
-        }
-
         return (
-          <div className="fixed bottom-0 left-0 right-0 z-[110] bg-white border-t border-gray-200 px-5 py-4 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-            <select
-              value={propiedadElegida ?? ''}
-              onChange={(e) => setPropiedadElegida(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 p-2 rounded-lg mb-3 text-sm font-medium outline-none"
-              style={{ color: '#1A1A1A' }}
-            >
-              {filtered.map((m) => {
-                const isSugerida = m.swipeId === winner.swipeId
-                return (
-                  <option key={m.swipeId} value={m.swipeId}>
-                    {isSugerida ? '👑 ' : ''}{m.property.titulo} — {fmtPrice(m.property.precio)}{isSugerida ? ' (Sugerida)' : ''}
-                  </option>
-                )
-              })}
-            </select>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowCompareModal(false)}
-                className="w-1/3 bg-gray-100 text-gray-700 rounded-xl font-bold py-3 text-[14px] border-none cursor-pointer transition-all active:scale-[.97]"
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:px-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[1000]">
+            <div className="max-w-md mx-auto flex flex-col gap-3">
+              <select
+                value={propiedadElegida ?? ''}
+                onChange={(e) => setPropiedadElegida(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold text-gray-800 outline-none"
               >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAgendar}
-                className="w-2/3 rounded-xl font-bold py-3 text-[14px] text-white border-none cursor-pointer transition-all active:scale-[.97]"
-                style={{ background: '#C2714F' }}
-              >
-                Agendar Visita 📅
-              </button>
+                {filtered.map((m) => {
+                  const isSugerida = m.swipeId === winner.swipeId
+                  return (
+                    <option key={m.swipeId} value={m.swipeId}>
+                      {isSugerida ? '👑 ' : ''}{m.property.titulo} — {fmtPrice(m.property.precio)}{isSugerida ? ' (Sugerida)' : ''}
+                    </option>
+                  )
+                })}
+              </select>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCompareModal(false)}
+                  className="w-1/3 bg-gray-100 text-gray-700 rounded-xl font-bold py-3.5 text-[14px] border-none cursor-pointer transition-all active:scale-[.97]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => alert('Abriendo agenda para la propiedad seleccionada...')}
+                  className="w-2/3 rounded-xl font-bold py-3.5 text-[14px] text-white border-none cursor-pointer transition-all active:scale-[.97]"
+                  style={{ background: '#C2714F' }}
+                >
+                  Agendar Visita 📅
+                </button>
+              </div>
             </div>
           </div>
         )
