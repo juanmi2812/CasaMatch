@@ -7,6 +7,8 @@ import {
   type MatchItem, type PreferenciasForm,
 } from '../services/profileService'
 import type { CitaConDetalles } from '../types/database'
+import type { PropiedadMock } from '../services/mockData'
+import PropertyDetailScreen from './PropertyDetailScreen'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -72,6 +74,9 @@ export default function ProfileScreen() {
   const [selectedMatches,   setSelectedMatches]   = useState<string[]>([])
   const [showCompareModal,  setShowCompareModal]  = useState(false)
   const [propiedadElegida,  setPropiedadElegida]  = useState<string | null>(null)
+
+  // Property detail state
+  const [viewingProperty,   setViewingProperty]   = useState<PropiedadMock | null>(null)
 
   // Preferencias tab state
   const [prefForm, setPrefForm] = useState<PreferenciasForm>({
@@ -291,7 +296,7 @@ export default function ProfileScreen() {
                       return (
                         <div
                           key={m.swipeId}
-                          className={`relative rounded-[16px] overflow-hidden transition-all duration-150 ${isComparing ? 'cursor-pointer' : ''}`}
+                          className={`relative rounded-[16px] overflow-hidden transition-all duration-150 cursor-pointer`}
                           style={{
                             background:  'white',
                             boxShadow:   '0 2px 10px rgba(0,0,0,0.08)',
@@ -299,7 +304,13 @@ export default function ProfileScreen() {
                             outlineOffset: '2px',
                             transform:   isSelected ? 'scale(1.02)' : 'scale(1)',
                           }}
-                          onClick={isComparing ? () => toggleSelectMatch(m.swipeId) : undefined}
+                          onClick={() => {
+                            if (isComparing) {
+                              toggleSelectMatch(m.swipeId)
+                            } else {
+                              setViewingProperty(m.property)
+                            }
+                          }}
                         >
                           {/* Property image */}
                           <div
@@ -313,7 +324,7 @@ export default function ProfileScreen() {
                             {/* Remove button — hidden while comparing */}
                             {!isComparing && (
                               <button
-                                onClick={() => handleRemoveMatch(m.swipeId)}
+                                onClick={(e) => { e.stopPropagation(); handleRemoveMatch(m.swipeId) }}
                                 className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer text-white text-[11px]"
                                 style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
                               >
@@ -817,6 +828,18 @@ export default function ProfileScreen() {
           </div>
         )
       })()}
+
+      {/* ── Property detail overlay ────────────────────────────── */}
+      {viewingProperty && (
+        <div className="fixed inset-0 z-[2000] bg-white overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+            <PropertyDetailScreen
+              property={viewingProperty}
+              onBack={() => setViewingProperty(null)}
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   )
