@@ -35,6 +35,12 @@ function initials(name: string): string {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
+function getFomoNumber(id: string): number {
+  let sum = 0
+  for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i)
+  return (sum % 8) + 2
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PropertyDetailScreen({ property, onBack, onViewAsesorPerfil }: Props) {
@@ -69,6 +75,7 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
 
   const GALLERY_COUNT = slides.length
   const asesorName    = asesor?.nombre ?? '—'
+  const fomoCount     = getFomoNumber(property.id)
 
   function handleWhatsApp() {
     if (!asesor?.telefono) return
@@ -149,6 +156,14 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
             />
           ))}
         </div>
+      </div>
+
+      {/* ── FOMO banner ────────────────────────────────────────── */}
+      <div className="mx-5 mt-4 p-3 rounded-xl flex items-center gap-2 border shadow-sm" style={{ background: '#FFF6ED', borderColor: '#FDBA74' }}>
+        <span className="text-lg">🔥</span>
+        <p className="text-[13px] font-medium" style={{ color: '#C2410C' }}>
+          <span className="font-bold">{fomoCount} personas</span> guardaron esta propiedad esta semana. ¡No dejes que te la ganen!
+        </p>
       </div>
 
       {/* ── Header info ────────────────────────────────────────── */}
@@ -334,13 +349,13 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
 
       {/* ── Sticky bottom action bar ────────────────────────────── */}
       <div
-        className="sticky bottom-0 left-0 right-0 flex gap-3 px-5 py-4"
-        style={{ background: 'rgba(253,250,246,0.96)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE4D7' }}
+        className="sticky bottom-0 left-0 right-0 z-50 flex gap-3 px-5 py-4"
+        style={{ background: 'rgba(253,250,246,0.96)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE4D7', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
       >
         <button
           onClick={handleWhatsApp}
           disabled={!asesor?.telefono}
-          className="flex-1 py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
+          className="flex-1 py-4 rounded-full text-[15px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
           style={{ background: '#25D366' }}
         >
           💬 Contactar asesor
@@ -349,7 +364,7 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
         <button
           onClick={() => setShowSched(true)}
           disabled={!session?.user || !property.asesorId}
-          className="flex-1 py-[14px] rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
+          className="flex-1 py-4 rounded-full text-[15px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
         >
           📅 Agendar cita
