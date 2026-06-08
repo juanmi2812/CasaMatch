@@ -347,9 +347,12 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
         )}
       </div>
 
-      {/* ── Sticky bottom action bar ────────────────────────────── */}
+      {/* spacer so fixed bar doesn't cover last content */}
+      <div className="pb-[120px]" />
+
+      {/* ── Fixed bottom action bar ─────────────────────────────── */}
       <div
-        className="sticky bottom-0 left-0 right-0 z-50 flex gap-3 px-5 py-4"
+        className="fixed bottom-0 left-0 right-0 flex gap-3 px-5 pt-4 pb-6 z-[100]"
         style={{ background: 'rgba(253,250,246,0.96)', backdropFilter: 'blur(12px)', borderTop: '1px solid #EDE4D7', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
       >
         <button

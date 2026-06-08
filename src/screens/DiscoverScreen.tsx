@@ -520,64 +520,48 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex justify-center items-center gap-5 pb-24">
+      <div className="flex-shrink-0 flex justify-center items-center gap-3 sm:gap-5 pb-28">
+
         {/* REWIND */}
-        <button
-          title="Deshacer último descarte"
-          onClick={handleRewind}
-          disabled={!lastSwiped}
-          className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
-        >
-          <span className="text-[24px] leading-none font-bold" style={{ color: '#F59E0B' }}>↺</span>
-        </button>
+        <div className="flex flex-col items-center gap-1.5">
+          <button title="Deshacer" onClick={handleRewind} disabled={!lastSwiped} className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.09)] text-[#F59E0B]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Volver</span>
+        </div>
 
         {/* NOPE */}
-        <button
-          title="No me interesa esta propiedad"
-          onClick={handleNope}
-          disabled={cards.length === 0}
-          className="w-[58px] h-[58px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{ background: 'white', boxShadow: '0 4px 18px rgba(0,0,0,0.11)' }}
-        >
-          <span className="text-[22px] leading-none" style={{ color: '#F87171' }}>✕</span>
-        </button>
+        <div className="flex flex-col items-center gap-1.5">
+          <button title="No me interesa" onClick={handleNope} disabled={cards.length === 0} className="w-[58px] h-[58px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30 bg-white shadow-[0_4px_18px_rgba(0,0,0,0.11)] text-[#F87171]">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Descartar</span>
+        </div>
 
         {/* INFO */}
-        <button
-          title="Ver detalles completos de la propiedad"
-          onClick={() => cards.length > 0 && onViewDetail(cards[0])}
-          disabled={cards.length === 0}
-          className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
-        >
-          <span className="text-[17px] leading-none" style={{ color: '#C2714F' }}>ℹ</span>
-        </button>
+        <div className="flex flex-col items-center gap-1.5 mt-4">
+          <button title="Ver detalles" onClick={() => cards.length > 0 && onViewDetail(cards[0])} disabled={cards.length === 0} className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.09)] text-[#C2714F]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </button>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Info</span>
+        </div>
 
         {/* SHARE */}
-        <button
-          title="Compartir enlace de esta propiedad"
-          onClick={handleShare}
-          disabled={cards.length === 0}
-          className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
-        >
-          <span className="text-[17px] leading-none" style={{ color: '#6B6B6B' }}>↗</span>
-        </button>
+        <div className="flex flex-col items-center gap-1.5 mt-4">
+          <button title="Compartir" onClick={handleShare} disabled={cards.length === 0} className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.09)] text-[#6B6B6B]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Enviar</span>
+        </div>
 
         {/* LIKE */}
-        <button
-          title="Me gusta esta propiedad"
-          onClick={handleLike}
-          disabled={cards.length === 0}
-          className="w-[66px] h-[66px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
-          style={{
-            background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)',
-            boxShadow:  '0 6px 22px rgba(194,113,79,0.42)',
-          }}
-        >
-          <span className="text-[26px] leading-none" style={{ color: 'white' }}>♥</span>
-        </button>
+        <div className="flex flex-col items-center gap-1.5">
+          <button title="Me gusta" onClick={handleLike} disabled={cards.length === 0} className="w-[66px] h-[66px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30 shadow-[0_6px_22px_rgba(194,113,79,0.42)] text-white" style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <span className="text-[11px] font-extrabold text-[#C2714F] uppercase tracking-wide">Me Gusta</span>
+        </div>
+
       </div>
 
       {/* Lazy Auth modal */}
