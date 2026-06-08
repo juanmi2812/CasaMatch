@@ -315,6 +315,7 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
   const [activeFilter,     setActiveFilter]    = useState<FilterTab>(() => tipoToFilter(tipoInicial))
   const [showToast,        setShowToast]       = useState(false)
   const [matchExplanation, setMatchExplanation] = useState<PropiedadMock | null>(null)
+  const [lastSwiped,       setLastSwiped]      = useState<PropiedadMock | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -361,11 +362,24 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
     setPendingAction(null)
   }
 
+  function handleSwipeLeft() {
+    if (cards.length > 0) setLastSwiped(cards[0])
+    removeTopCard()
+  }
+
   function handleSwipeRight() {
     if (cards.length > 0) {
       recordSwipe(cards[0].id, 'like')
     }
+    setLastSwiped(null)
     removeTopCard()
+  }
+
+  function handleRewind() {
+    if (lastSwiped) {
+      setCards((prev) => [lastSwiped!, ...prev])
+      setLastSwiped(null)
+    }
   }
 
   function handleShare() {
@@ -496,7 +510,7 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
               card={cards[0]}
               isTop
               requiresAuth={!isAuthenticated}
-              onSwipeLeft={removeTopCard}
+              onSwipeLeft={handleSwipeLeft}
               onSwipeRight={handleSwipeRight}
               onAuthRequired={handleAuthRequired}
               onShowMatch={() => setMatchExplanation(cards[0])}
@@ -507,6 +521,17 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
 
       {/* Action buttons */}
       <div className="flex-shrink-0 flex justify-center items-center gap-5 pb-24">
+        {/* REWIND */}
+        <button
+          title="Deshacer último descarte"
+          onClick={handleRewind}
+          disabled={!lastSwiped}
+          className="w-[46px] h-[46px] rounded-full flex items-center justify-center border-none cursor-pointer transition-all active:scale-[.87] disabled:opacity-30"
+          style={{ background: 'white', boxShadow: '0 4px 14px rgba(0,0,0,0.09)' }}
+        >
+          <span className="text-[24px] leading-none font-bold" style={{ color: '#F59E0B' }}>↺</span>
+        </button>
+
         {/* NOPE */}
         <button
           title="No me interesa esta propiedad"
