@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
 import type { CaracteristicasLifestyle, Propiedad, TipoInteraccion, TipoPropiedad } from '../types/database'
-import type { PropiedadMock } from './mockData'
 
 // ─── Gradient + emoji fallbacks per property type ────────────────────────────
 
@@ -20,14 +19,22 @@ const TIPO_EMOJIS: Record<TipoPropiedad, string> = {
   oficina:      '🏢',
 }
 
-// ─── Map DB row → PropiedadMock ───────────────────────────────────────────────
+export interface PropiedadConCompatibilidad extends Propiedad {
+  compatibilidad:  number
+  gradientFrom:    string
+  gradientTo:      string
+  emoji:           string
+  tags:            string[]
+  caracteristicas: CaracteristicasLifestyle
+}
 
-export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
-  // Try both JSONB columns; prefer `caracteristicas` (alt name some DBs use)
+// ─── Map DB row → PropiedadConCompatibilidad ───────────────────────────────────
+
+export function enriquecerPropiedad(p: Propiedad): PropiedadConCompatibilidad {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cL   = (p.caracteristicas_lifestyle as Record<string, any> | null | undefined) ?? {}
+  const cL = (p.caracteristicas_lifestyle as Record<string, any> | null | undefined) ?? {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cA   = (p.caracteristicas           as Record<string, any> | null | undefined) ?? {}
+  const cA = (p.caracteristicas           as Record<string, any> | null | undefined) ?? {}
 
   const pick = (keyL: string, keyA?: string, fallback = 3): number => {
     const fromA = cA[keyA ?? keyL]
@@ -63,24 +70,13 @@ export function mapPropiedadToMock(p: Propiedad): PropiedadMock {
   if (c.vida_social >= 4) tags.push('Vida social')
 
   return {
-    id:           p.id,
-    asesorId:     p.asesor_id,
-    titulo:       p.titulo,
-    ubicacion:    p.ubicacion,
-    ciudad:       p.ciudad.toLowerCase(),
-    precio:       Number(p.precio),
-    tipo:         p.tipo,
-    recamaras:    p.recamaras    ?? 0,
-    banos:        Number(p.banos ?? 0),
-    m2:           Number(p.m2   ?? 0),
+    ...p,
     compatibilidad,
     gradientFrom,
     gradientTo,
     emoji:        TIPO_EMOJIS[p.tipo] ?? '🏠',
     tags,
     caracteristicas: c,
-    imagenes:     p.imagenes,
-    urlVideo:     p.url_video || undefined,
   }
 }
 
@@ -92,8 +88,7 @@ export interface PropertyFilters {
 }
 
 export async function getProperties(filters: PropertyFilters = {}): Promise<Propiedad[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabase
+  let q = supabase
     .from('propiedades')
     .select('id, asesor_id, titulo, descripcion, tipo, precio, ciudad, ubicacion, recamaras, banos, estacionamientos, m2, caracteristicas_lifestyle, caracteristicas, url_video, imagenes, activa, destacada, creado_en, actualizado_en')
     .eq('activa', true)
@@ -120,14 +115,87 @@ export async function recordSwipe(
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('interacciones_swipes')
     .upsert({
       usuario_id:       session.user.id,
       propiedad_id:     propertyId,
       tipo_interaccion: action,
+      estatus:          'nuevo',
     }, { onConflict: 'usuario_id,propiedad_id' })
 
   if (error) console.error('[recordSwipe]', error.message)
+}
+
+// ─── Storage cleanup helpers ───────────────────────────────────────────────────
+
+export async function deleteStorageFiles(paths: string[], bucket = 'propiedades'): Promise<void> {
+  if (paths.length === 0) return
+  const { error } = await supabase.storage.from(bucket).remove(paths)
+  if (error) {
+    console.error(`[deleteStorageFiles] Error deleting files from ${bucket}:`, error.message)
+  }
+}
+
+export function extractPathFromUrl(url: string, bucket = 'propiedades'): string | null {
+  try {
+    const marker = `/storage/v1/object/public/${bucket}/`
+    const index = url.indexOf(marker)
+    if (index !== -1) {
+      return url.slice(index + marker.length)
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// ─── Image optimization helper ───────────────────────────────────────────────
+
+export async function optimizeImage(file: File, maxWidth = 1200, quality = 0.8): Promise<Blob | File> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(file)
+          return
+        }
+
+        try {
+          ctx.filter = 'contrast(1.10) saturate(1.15)'
+        } catch (e) {
+          console.warn('[optimizeImage] Canvas filters not supported', e)
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob ?? file)
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+      img.onerror = () => resolve(file)
+    }
+    reader.onerror = () => resolve(file)
+  })
 }

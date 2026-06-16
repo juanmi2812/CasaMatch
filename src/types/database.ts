@@ -6,7 +6,7 @@
 // ENUMS
 // =============================================================
 
-export type RolUsuario      = 'usuario' | 'asesor' | 'admin'
+export type RolUsuario      = 'usuario' | 'asesor' | 'admin' | 'admin_agencia'
 export type TipoOperacion   = 'comprar' | 'rentar' | 'invertir'
 export type TipoInteraccion = 'like' | 'nope' | 'save'
 export type TipoPropiedad   = 'casa' | 'departamento' | 'terreno' | 'local' | 'oficina'
@@ -48,6 +48,7 @@ export interface Perfil {
   telefono:           string | null
   avatar_url:         string | null
   agencia:            string | null
+  agencia_id:         string | null
   rol:                RolUsuario
   biografia?:         string | null
   instagram_url?:     string | null
@@ -131,11 +132,20 @@ export interface Propiedad {
   actualizado_en:            string
 }
 
+export interface Agencia {
+  id:             string
+  nombre:         string
+  plan:           'free' | 'premium'
+  creado_en:      string
+  actualizado_en: string
+}
+
 export interface InteraccionSwipe {
   id:               string
   usuario_id:       string
   propiedad_id:     string
   tipo_interaccion: TipoInteraccion
+  estatus:          string | null
   creado_en:        string
 }
 
@@ -144,7 +154,7 @@ export interface InteraccionSwipe {
 // =============================================================
 
 export type PerfilInsert = Pick<Perfil, 'id' | 'nombre'> &
-  Partial<Pick<Perfil, 'telefono' | 'avatar_url' | 'agencia' | 'rol'>>
+  Partial<Pick<Perfil, 'telefono' | 'avatar_url' | 'agencia' | 'agencia_id' | 'rol'>>
 
 export type PreferenciaOnboardingInsert =
   Pick<PreferenciaOnboarding, 'usuario_id' | 'tipo_operacion' | 'ciudad'> &
@@ -155,14 +165,15 @@ export type PropiedadInsert =
   Partial<Omit<Propiedad, 'id' | 'asesor_id' | 'titulo' | 'tipo' | 'precio' | 'ciudad' | 'ubicacion' | 'creado_en' | 'actualizado_en'>>
 
 export type InteraccionSwipeInsert =
-  Pick<InteraccionSwipe, 'usuario_id' | 'propiedad_id' | 'tipo_interaccion'>
+  Pick<InteraccionSwipe, 'usuario_id' | 'propiedad_id' | 'tipo_interaccion'> &
+  Partial<Pick<InteraccionSwipe, 'estatus'>>
 
 // =============================================================
 // UPDATE TYPES — campos mutables; claves primarias y FKs inmutables
 // =============================================================
 
 export type PerfilUpdate =
-  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'agencia' | 'rol' | 'biografia' | 'instagram_url' | 'tiktok_url' | 'facebook_url' | 'anios_experiencia'>>
+  Partial<Pick<Perfil, 'nombre' | 'telefono' | 'avatar_url' | 'agencia' | 'agencia_id' | 'rol' | 'biografia' | 'instagram_url' | 'tiktok_url' | 'facebook_url' | 'anios_experiencia'>>
 
 export type PreferenciaOnboardingUpdate =
   Partial<Omit<PreferenciaOnboarding, 'id' | 'usuario_id' | 'creado_en' | 'actualizado_en'>>
@@ -171,7 +182,7 @@ export type PropiedadUpdate =
   Partial<Omit<Propiedad, 'id' | 'asesor_id' | 'creado_en' | 'actualizado_en'>>
 
 export type InteraccionSwipeUpdate =
-  Pick<InteraccionSwipe, 'tipo_interaccion'>
+  Partial<Pick<InteraccionSwipe, 'tipo_interaccion' | 'estatus'>>
 
 // =============================================================
 // JOINED TYPES — para queries con relaciones
@@ -222,6 +233,12 @@ export interface KpisGlobales {
 export interface Database {
   public: {
     Tables: {
+      agencias: {
+        Row:    Agencia
+        Insert: Omit<Agencia, 'id' | 'creado_en' | 'actualizado_en'> & Partial<Pick<Agencia, 'id' | 'plan'>>
+        Update: Partial<Omit<Agencia, 'id' | 'creado_en' | 'actualizado_en'>>
+        Relationships: []
+      }
       perfiles: {
         Row:    Perfil
         Insert: PerfilInsert

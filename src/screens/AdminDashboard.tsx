@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import type { KpisGlobales } from '../types/database'
+import type { KpisGlobales, Perfil, InteraccionSwipe } from '../types/database'
 
 interface AsesorRow {
   id:         string
@@ -90,6 +90,7 @@ function KpiCard({
 export default function AdminDashboard() {
   const { session, signOut } = useAuth()
 
+  const [perfil,            setPerfil]            = useState<Perfil | null>(null)
   const [kpis,              setKpis]              = useState<KpisGlobales | null>(null)
   const [loading,           setLoading]           = useState(true)
   const [error,             setError]             = useState<string | null>(null)
@@ -99,22 +100,169 @@ export default function AdminDashboard() {
   const [listaPropiedades,  setListaPropiedades]  = useState<PropiedadRow[]>([])
   const [loadingDetalle,    setLoadingDetalle]    = useState(false)
 
+  // Fetch logged-in user profile
   useEffect(() => {
-    if (!session?.user) { setLoading(false); return }
+    if (!session?.user) return
     supabase
-      .from('kpis_globales')
+      .from('perfiles')
       .select('*')
-      .maybeSingle()
+      .eq('id', session.user.id)
+      .single()
       .then(({ data, error: err }) => {
-        if (err) setError(err.message)
-        else if (data) setKpis(data as KpisGlobales)
-        setLoading(false)
+        if (err) {
+          console.error('Error fetching admin profile:', err)
+        } else if (data) {
+          setPerfil(data as Perfil)
+        }
       })
   }, [session])
+
+  useEffect(() => {
+    if (!session?.user) { setLoading(false); return }
+    if (!perfil) return // wait for profile to determine role
+
+    const isAgencyAdmin = perfil.rol === 'admin_agencia'
+    const agencyId = perfil.agencia_id
+
+    if (isAgencyAdmin) {
+      if (!agencyId) {
+        setError('No tienes una agencia asignada en tu perfil.')
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setError(null)
+
+      const loadAgencyData = async () => {
+        try {
+          // 1. Fetch advisors belonging to this agency
+          const { data: advisors, error: advErr } = await supabase
+            .from('perfiles')
+            .select('id, nombre, agencia, telefono, avatar_url')
+            .eq('rol', 'asesor')
+            .eq('agencia_id', agencyId)
+            .order('nombre')
+
+          if (advErr) throw advErr
+
+          const advisorList = (advisors ?? []) as AsesorRow[]
+          setListaAsesores(advisorList)
+
+          const advisorIds = advisorList.map((a) => a.id)
+          if (advisorIds.length === 0) {
+            setKpis({
+              propiedades_activas: 0,
+              total_asesores: 0,
+              total_usuarios: 0,
+              total_likes: 0,
+              total_saves: 0,
+              total_leads: 0,
+            })
+            setListaPropiedades([])
+            setListaUsuarios([])
+            setLoading(false)
+            return
+          }
+
+          // 2. Fetch properties of those advisors
+          const { data: props, error: propsErr } = await supabase
+            .from('propiedades')
+            .select('id, titulo, precio, asesor_id, ciudad, tipo, activa, creado_en')
+            .in('asesor_id', advisorIds)
+            .order('creado_en', { ascending: false })
+
+          if (propsErr) throw propsErr
+
+          const propertyList = (props ?? []) as PropiedadRow[]
+          setListaPropiedades(propertyList)
+
+          const propertyIds = propertyList.map((p) => p.id)
+
+          let totalLikes = 0
+          let totalSaves = 0
+          let totalLeads = 0
+          let totalUsuarios = 0
+
+          if (propertyIds.length > 0) {
+            // 3. Fetch swipes on these properties
+            const { data: swipes, error: swipesErr } = await supabase
+              .from('interacciones_swipes')
+              .select('id, usuario_id, propiedad_id, tipo_interaccion, creado_en, estatus')
+              .in('propiedad_id', propertyIds)
+              .in('tipo_interaccion', ['like', 'save'])
+
+            if (swipesErr) throw swipesErr
+
+            const swipesList = (swipes ?? []) as InteraccionSwipe[]
+            totalLikes = swipesList.filter((s) => s.tipo_interaccion === 'like').length
+            totalSaves = swipesList.filter((s) => s.tipo_interaccion === 'save').length
+            totalLeads = swipesList.length
+
+            const uniqueUserIds = Array.from(new Set(swipesList.map((s) => s.usuario_id)))
+            totalUsuarios = uniqueUserIds.length
+
+            if (uniqueUserIds.length > 0) {
+              // 4. Fetch profiles for these users
+              const { data: users, error: usersErr } = await supabase
+                .from('perfiles')
+                .select('id, nombre, creado_en')
+                .in('id', uniqueUserIds)
+                .order('creado_en', { ascending: false })
+
+              if (usersErr) throw usersErr
+              setListaUsuarios((users ?? []) as UsuarioRow[])
+            } else {
+              setListaUsuarios([])
+            }
+          } else {
+            setListaUsuarios([])
+          }
+
+          setKpis({
+            propiedades_activas: propertyList.filter((p) => p.activa).length,
+            total_asesores: advisorList.length,
+            total_usuarios: totalUsuarios,
+            total_likes: totalLikes,
+            total_saves: totalSaves,
+            total_leads: totalLeads,
+          })
+
+        } catch (err: any) {
+          console.error('Error loading agency admin dashboard data:', err)
+          setError(err.message || 'Error al cargar los datos de la agencia.')
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      loadAgencyData()
+    } else {
+      // Global admin
+      setLoading(true)
+      setError(null)
+      supabase
+        .from('kpis_globales')
+        .select('*')
+        .maybeSingle()
+        .then(({ data, error: err }) => {
+          if (err) setError(err.message)
+          else if (data) setKpis(data as KpisGlobales)
+          setLoading(false)
+        })
+    }
+  }, [session, perfil])
 
   async function handleDrillDown(vista: Vista) {
     if (vistaActiva === vista) { setVistaActiva('resumen'); return }
     setVistaActiva(vista)
+
+    // For agency admin, detail lists are preloaded and scoped
+    if (perfil?.rol === 'admin_agencia') {
+      return
+    }
+
+    // Dynamic lazy-loading for global admin
     setLoadingDetalle(true)
 
     if (vista === 'asesores' && listaAsesores.length === 0) {
@@ -168,7 +316,7 @@ export default function AdminDashboard() {
             className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white mr-2"
             style={{ background: '#1A1A1A' }}
           >
-            Admin
+            {perfil?.rol === 'admin_agencia' ? 'Admin Agencia' : 'Admin'}
           </div>
           <button
             onClick={() => signOut()}
@@ -179,14 +327,20 @@ export default function AdminDashboard() {
           </button>
         </div>
         <p className="text-[13px]" style={{ color: '#9B9B9B' }}>
-          {vistaActiva === 'resumen' ? 'Métricas globales — kpis_globales' : 'Vista de detalle — haz clic en una tarjeta para volver'}
+          {perfil?.rol === 'admin_agencia'
+            ? (vistaActiva === 'resumen' ? `Métricas de tu agencia: ${perfil.agencia || '—'}` : 'Vista de detalle — haz clic en una tarjeta para volver')
+            : (vistaActiva === 'resumen' ? 'Métricas globales — kpis_globales' : 'Vista de detalle — haz clic en una tarjeta para volver')
+          }
         </p>
       </div>
 
       {error && (
         <div className="mx-4 mb-4 px-4 py-3 rounded-[14px]" style={{ background: 'rgba(220,38,38,0.08)' }}>
           <p className="text-[12px]" style={{ color: '#DC2626' }}>
-            Sin acceso a kpis_globales. Verifica que tu JWT incluya app_metadata.rol = "admin".
+            {perfil?.rol === 'admin_agencia'
+              ? 'Error al acceder a los datos de la agencia.'
+              : 'Sin acceso a kpis_globales. Verifica que tu JWT incluya app_metadata.rol = "admin".'
+            }
           </p>
           <p className="text-[11px] mt-1" style={{ color: '#DC2626', opacity: 0.7 }}>{error}</p>
         </div>
@@ -195,7 +349,7 @@ export default function AdminDashboard() {
       {/* ── KPI cards ────────────────────────────────────────────── */}
       <div className="px-4 mb-6">
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#9B9B9B' }}>
-          Plataforma global
+          {perfil?.rol === 'admin_agencia' ? 'Métricas de la Agencia' : 'Plataforma global'}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
           <KpiCard
@@ -278,9 +432,9 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: '#9B9B9B' }}>
-                {vistaActiva === 'propiedades' && 'Últimas propiedades'}
-                {vistaActiva === 'asesores'    && 'Asesores registrados'}
-                {vistaActiva === 'usuarios'    && 'Usuarios recientes'}
+                {vistaActiva === 'propiedades' && (perfil?.rol === 'admin_agencia' ? 'Propiedades de la agencia' : 'Últimas propiedades')}
+                {vistaActiva === 'asesores'    && (perfil?.rol === 'admin_agencia' ? 'Asesores de la agencia' : 'Asesores registrados')}
+                {vistaActiva === 'usuarios'    && (perfil?.rol === 'admin_agencia' ? 'Clientes de la agencia' : 'Usuarios recientes')}
               </p>
               <button
                 onClick={() => setVistaActiva('resumen')}

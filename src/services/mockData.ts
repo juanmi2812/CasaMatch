@@ -1,29 +1,13 @@
-import type { CaracteristicasLifestyle, TipoPropiedad } from '../types/database'
+import type { PropiedadConCompatibilidad } from './propertyService'
 
-export interface PropiedadMock {
-  id:              string
-  asesorId?:       string   // FK → perfiles.id
-  titulo:          string
-  ubicacion:       string
-  ciudad:          string
-  precio:          number
-  tipo:            TipoPropiedad
-  recamaras:       number
-  banos:           number
-  m2:              number
-  compatibilidad:  number   // 0–100
-  gradientFrom:    string
-  gradientTo:      string
-  emoji:           string
-  tags:            string[]
-  caracteristicas: CaracteristicasLifestyle
-  imagenes?:       string[] // URLs from DB; takes priority over gradients when present
-  urlVideo?:       string   // mp4 URL for reel playback
-}
+export type PropiedadMock = PropiedadConCompatibilidad
+
+const nowStr = new Date().toISOString()
 
 export const MOCK_PROPERTIES: PropiedadMock[] = [
   {
     id:           '1',
+    asesor_id:    'd8ef3f94-1111-4444-8888-000000000001',
     titulo:       'Residencia Moderna en Juriquilla',
     ubicacion:    'Juriquilla, Querétaro',
     ciudad:       'queretaro',
@@ -32,6 +16,12 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
     recamaras:    4,
     banos:        3,
     m2:           280,
+    estacionamientos: 2,
+    descripcion:  'Hermosa casa moderna con amplios espacios.',
+    activa:       true,
+    destacada:    true,
+    creado_en:    nowStr,
+    actualizado_en: nowStr,
     compatibilidad: 94,
     gradientFrom: '#C2714F',
     gradientTo:   '#7A3E28',
@@ -48,9 +38,23 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
       familias:           true,
       home_office:        false,
     },
+    caracteristicas_lifestyle: {
+      seguridad:          5,
+      trafico:            4,
+      vida_social:        3,
+      tranquilidad:       5,
+      plusvalia:          5,
+      servicios_cercanos: 4,
+      pet_friendly:       true,
+      familias:           true,
+      home_office:        false,
+    },
+    imagenes: [],
+    url_video: null,
   },
   {
     id:           '2',
+    asesor_id:    'd8ef3f94-2222-4444-8888-000000000002',
     titulo:       'Departamento Loft en Polanco',
     ubicacion:    'Polanco, Ciudad de México',
     ciudad:       'cdmx',
@@ -59,6 +63,12 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
     recamaras:    2,
     banos:        2,
     m2:           115,
+    estacionamientos: 1,
+    descripcion:  'Estilo loft en el corazón de Polanco.',
+    activa:       true,
+    destacada:    false,
+    creado_en:    nowStr,
+    actualizado_en: nowStr,
     compatibilidad: 87,
     gradientFrom: '#5C6E4A',
     gradientTo:   '#2F3D24',
@@ -75,9 +85,23 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
       familias:           false,
       home_office:        true,
     },
+    caracteristicas_lifestyle: {
+      seguridad:          4,
+      trafico:            2,
+      vida_social:        5,
+      tranquilidad:       2,
+      plusvalia:          4,
+      servicios_cercanos: 5,
+      pet_friendly:       false,
+      familias:           false,
+      home_office:        true,
+    },
+    imagenes: [],
+    url_video: null,
   },
   {
     id:           '3',
+    asesor_id:    'd8ef3f94-1111-4444-8888-000000000001',
     titulo:       'Casa Jardín en El Campanario',
     ubicacion:    'El Campanario, Querétaro',
     ciudad:       'queretaro',
@@ -86,6 +110,12 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
     recamaras:    3,
     banos:        2,
     m2:           220,
+    estacionamientos: 2,
+    descripcion:  'Residencia exclusiva con jardín amplio.',
+    activa:       true,
+    destacada:    false,
+    creado_en:    nowStr,
+    actualizado_en: nowStr,
     compatibilidad: 91,
     gradientFrom: '#8B6E5A',
     gradientTo:   '#4A3328',
@@ -102,9 +132,23 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
       familias:           true,
       home_office:        false,
     },
+    caracteristicas_lifestyle: {
+      seguridad:          5,
+      trafico:            4,
+      vida_social:        3,
+      tranquilidad:       5,
+      plusvalia:          4,
+      servicios_cercanos: 4,
+      pet_friendly:       true,
+      familias:           true,
+      home_office:        false,
+    },
+    imagenes: [],
+    url_video: null,
   },
   {
     id:           '4',
+    asesor_id:    'd8ef3f94-2222-4444-8888-000000000002',
     titulo:       'Penthouse Vista Chapultepec',
     ubicacion:    'Lomas de Chapultepec, CDMX',
     ciudad:       'cdmx',
@@ -113,6 +157,12 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
     recamaras:    3,
     banos:        3,
     m2:           195,
+    estacionamientos: 3,
+    descripcion:  'Penthouse lujoso con vistas inmejorables.',
+    activa:       true,
+    destacada:    true,
+    creado_en:    nowStr,
+    actualizado_en: nowStr,
     compatibilidad: 79,
     gradientFrom: '#2C2C3E',
     gradientTo:   '#0F0F1A',
@@ -129,9 +179,23 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
       familias:           false,
       home_office:        true,
     },
+    caracteristicas_lifestyle: {
+      seguridad:          5,
+      trafico:            1,
+      vida_social:        4,
+      tranquilidad:       3,
+      plusvalia:          5,
+      servicios_cercanos: 5,
+      pet_friendly:       true,
+      familias:           false,
+      home_office:        true,
+    },
+    imagenes: [],
+    url_video: null,
   },
   {
     id:           '5',
+    asesor_id:    'd8ef3f94-3333-4444-8888-000000000003',
     titulo:       'Townhouse Contemporáneo en Santa Fe',
     ubicacion:    'Santa Fe, Ciudad de México',
     ciudad:       'cdmx',
@@ -140,6 +204,12 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
     recamaras:    3,
     banos:        3,
     m2:           180,
+    estacionamientos: 2,
+    descripcion:  'Estilo contemporáneo en zona corporativa.',
+    activa:       true,
+    destacada:    false,
+    creado_en:    nowStr,
+    actualizado_en: nowStr,
     compatibilidad: 83,
     gradientFrom: '#4A6080',
     gradientTo:   '#1F3248',
@@ -156,5 +226,18 @@ export const MOCK_PROPERTIES: PropiedadMock[] = [
       familias:           true,
       home_office:        true,
     },
+    caracteristicas_lifestyle: {
+      seguridad:          5,
+      trafico:            2,
+      vida_social:        4,
+      tranquilidad:       3,
+      plusvalia:          4,
+      servicios_cercanos: 5,
+      pet_friendly:       false,
+      familias:           true,
+      home_office:        true,
+    },
+    imagenes: [],
+    url_video: null,
   },
 ]

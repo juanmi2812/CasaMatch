@@ -12,10 +12,25 @@
 -- 0. TIPOS ENUMERADOS
 -- =============================================================
 
-CREATE TYPE rol_usuario      AS ENUM ('usuario', 'asesor', 'admin');
+CREATE TYPE rol_usuario      AS ENUM ('usuario', 'asesor', 'admin', 'admin_agencia');
 CREATE TYPE tipo_operacion   AS ENUM ('comprar', 'rentar', 'invertir');
 CREATE TYPE tipo_interaccion AS ENUM ('like', 'nope', 'save');
 
+
+-- =============================================================
+-- 0.5. TABLA: agencias
+-- Permite agrupar asesores e implementar multitenencia (multi-tenant).
+-- =============================================================
+
+CREATE TABLE agencias (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre         TEXT        NOT NULL,
+  plan           TEXT        NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'premium')),
+  creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE agencias IS 'Agencias inmobiliarias para el modelo multitenencia SaaS.';
 
 -- =============================================================
 -- 1. TABLA: perfiles
@@ -28,7 +43,8 @@ CREATE TABLE perfiles (
   nombre         TEXT        NOT NULL,
   telefono       TEXT,
   avatar_url     TEXT,
-  agencia        TEXT,
+  agencia        TEXT, -- Texto libre (retrocompatibilidad)
+  agencia_id     UUID        REFERENCES agencias(id) ON DELETE SET NULL,
   rol            rol_usuario NOT NULL DEFAULT 'usuario',
   creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -156,6 +172,10 @@ BEGIN
 END;
 $$;
 
+CREATE TRIGGER trg_agencias_ts
+  BEFORE UPDATE ON agencias
+  FOR EACH ROW EXECUTE FUNCTION fn_actualizar_timestamp();
+
 CREATE TRIGGER trg_perfiles_ts
   BEFORE UPDATE ON perfiles
   FOR EACH ROW EXECUTE FUNCTION fn_actualizar_timestamp();
@@ -211,10 +231,41 @@ CREATE TRIGGER trg_auth_crear_perfil
 -- Habilitado en todas las tablas del schema público.
 -- =============================================================
 
+ALTER TABLE agencias                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE perfiles                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE preferencias_onboarding ENABLE ROW LEVEL SECURITY;
 ALTER TABLE propiedades             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interacciones_swipes    ENABLE ROW LEVEL SECURITY;
+
+
+-- =============================================================
+-- 8a_0. POLÍTICAS: agencias
+-- =============================================================
+
+CREATE POLICY "agencias: lectura para usuarios autenticados"
+  ON agencias FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY "agencias: insertar para usuarios autenticados"
+  ON agencias FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "agencias: actualizar para miembros de la agencia"
+  ON agencias FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM perfiles
+    WHERE perfiles.agencia_id = agencias.id
+      AND perfiles.id = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM perfiles
+    WHERE perfiles.agencia_id = agencias.id
+      AND perfiles.id = auth.uid()
+  ));
+
+CREATE POLICY "agencias: admin puede modificar"
+  ON agencias FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');
 
 
 -- =============================================================
@@ -492,3 +543,57 @@ CREATE POLICY "citas: cliente cancela"
 CREATE POLICY "admin: leer todas las citas"
   ON citas FOR SELECT TO authenticated
   USING ((auth.jwt() -> 'app_metadata' ->> 'rol')::text = 'admin');
+
+
+-- =============================================================
+-- 12. TRIGGER: limitar propiedades activas a 5 para asesores gratis
+-- =============================================================
+
+CREATE OR REPLACE FUNCTION fn_limitar_propiedades_gratis()
+RETURNS TRIGGER AS $$
+DECLARE
+  total_activas INTEGER;
+  user_rol rol_usuario;
+  user_agencia_id UUID;
+  agencia_plan TEXT;
+BEGIN
+  -- Obtener rol y agencia del asesor
+  SELECT rol, agencia_id INTO user_rol, user_agencia_id 
+  FROM public.perfiles 
+  WHERE id = NEW.asesor_id;
+  
+  -- Si es administrador, no hay límites
+  IF user_rol = 'admin' THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Obtener plan de la agencia si tiene
+  IF user_agencia_id IS NOT NULL THEN
+    SELECT plan INTO agencia_plan FROM public.agencias WHERE id = user_agencia_id;
+  ELSE
+    agencia_plan := 'free';
+  END IF;
+  
+  -- Si el plan de la agencia es free, validar el límite de 5 propiedades activas
+  IF COALESCE(agencia_plan, 'free') = 'free' AND NEW.activa = TRUE THEN
+    SELECT COUNT(*) INTO total_activas 
+    FROM public.propiedades 
+    WHERE asesor_id = NEW.asesor_id AND activa = TRUE;
+    
+    -- En un UPDATE, descontar la propiedad misma si ya estaba activa
+    IF TG_OP = 'UPDATE' AND OLD.activa = TRUE THEN
+      total_activas := total_activas - 1;
+    END IF;
+    
+    IF total_activas >= 5 THEN
+      RAISE EXCEPTION 'Límite de propiedades excedido. El plan gratuito solo permite hasta 5 propiedades activas.';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_limitar_propiedades
+  BEFORE INSERT OR UPDATE ON public.propiedades
+  FOR EACH ROW EXECUTE FUNCTION fn_limitar_propiedades_gratis();

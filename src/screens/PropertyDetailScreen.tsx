@@ -51,17 +51,17 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
   const pointerStart                = useRef(0)
 
   useEffect(() => {
-    if (!property.asesorId) return
+    if (!property.asesor_id) return
     supabase
       .from('perfiles')
       .select('nombre, telefono, avatar_url, agencia, instagram_url, tiktok_url, facebook_url, anios_experiencia')
-      .eq('id', property.asesorId)
+      .eq('id', property.asesor_id)
       .single()
       .then(({ data, error }) => {
         if (error) { console.error('[asesor fetch]', error.message); return }
         if (data) setAsesor(data as AsesorInfo)
       })
-  }, [property.asesorId])
+  }, [property.asesor_id])
 
   const slides: Array<{ imageUrl?: string; from?: string; to?: string }> =
     property.imagenes && property.imagenes.length > 0
@@ -336,9 +336,9 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
         )}
 
         {/* Ver perfil completo */}
-        {property.asesorId && onViewAsesorPerfil && (
+        {property.asesor_id && onViewAsesorPerfil && (
           <button
-            onClick={() => onViewAsesorPerfil(property.asesorId!)}
+            onClick={() => onViewAsesorPerfil(property.asesor_id!)}
             className="w-full py-2.5 rounded-[14px] text-[12px] font-semibold border-none cursor-pointer transition-all active:scale-[.97]"
             style={{ background: '#F5EFE6', color: '#C2714F', border: '1px solid rgba(194,113,79,0.20)' }}
           >
@@ -366,7 +366,7 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
 
         <button
           onClick={() => setShowSched(true)}
-          disabled={!session?.user || !property.asesorId}
+          disabled={!session?.user || !property.asesor_id}
           className="flex-1 py-4 rounded-full text-[15px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97] disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
         >
@@ -376,10 +376,10 @@ export default function PropertyDetailScreen({ property, onBack, onViewAsesorPer
 
       {/* ── ScheduleModal ──────────────────────────────────────── */}
       <AnimatePresence>
-        {showSched && session?.user && property.asesorId && (
+        {showSched && session?.user && property.asesor_id && (
           <ScheduleModal
             property={property}
-            asesorId={property.asesorId}
+            asesorId={property.asesor_id}
             clientId={session.user.id}
             onDismiss={() => setShowSched(false)}
           />

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { calcularMetricasSimuladas, type MetricasVecindario } from '../../lib/aiClient'
 import type { TipoPropiedad } from '../../types/database'
+import { optimizeImage, deleteStorageFiles, extractPathFromUrl } from '../../services/propertyService'
 
 interface PropData {
   id:                        string
@@ -15,11 +16,12 @@ interface PropData {
   descripcion:               string | null
   recamaras:                 number | null
   banos:                     number | null
+  estacionamientos?:         number | null
   m2:                        number | null
   activa:                    boolean
   imagenes:                  string[]
   caracteristicas?:          Record<string, number> | null
-  caracteristicas_lifestyle?: Record<string, number> | null
+  caracteristicas_lifestyle?: Record<string, any> | null
 }
 
 interface Props {
@@ -68,26 +70,119 @@ function initMetricas(prop: PropData): MetricasVecindario {
   }
 }
 
+// ─── AI description generator ──────────────// ─── Toggle Button Component ──────────────────────────────────────────────────
+
+function ToggleButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-3 py-1.5 rounded-full text-[11px] font-semibold border-none cursor-pointer transition-all"
+      style={{
+        background: active ? '#C2714F' : '#EDE4D7',
+        color: active ? 'white' : '#6B6B6B',
+        boxShadow: active ? '0 2px 6px rgba(194,113,79,0.3)' : 'none',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 // ─── AI description generator ────────────────────────────────────────────────
 
-function buildDescription(tipo: TipoPropiedad, ubicacion: string, precio: string): string {
+function buildDescription(
+  tipo: TipoPropiedad,
+  ubicacion: string,
+  precio: string,
+  recamaras: string,
+  m2: string,
+  pisos: string,
+  tieneCloset: boolean,
+  cuartoTv: boolean,
+  banosCompletos: string,
+  mediosBanos: string,
+  cocinaIntegral: boolean,
+  cuartoLavado: boolean,
+  jardin: boolean,
+  terraza: boolean,
+  cocheras: string,
+  esPrivada: boolean,
+  calle: string,
+  amenidades: string
+): string {
   const tipoLabel: Record<TipoPropiedad, string> = {
-    casa: 'casa', departamento: 'departamento', terreno: 'terreno con gran potencial',
-    local: 'local comercial', oficina: 'oficina',
+    casa:         'casa',
+    departamento: 'departamento',
+    terreno:      'terreno con gran potencial',
+    local:        'local comercial',
+    oficina:      'oficina',
   }
   const precioNum = Number(precio)
   const precioFmt = precioNum >= 1_000_000
     ? `$${(precioNum / 1_000_000).toFixed(1)} millones MXN`
-    : precioNum > 0 ? `$${precioNum.toLocaleString('es-MX')} MXN` : 'precio competitivo'
-  const zona = ubicacion.trim() || 'una zona exclusiva'
-  const usp: Record<TipoPropiedad, string> = {
-    casa:         'hacer de este espacio el hogar de tus sueños',
-    departamento: 'disfrutar de una vida urbana moderna y cómoda',
-    terreno:      'desarrollar un proyecto con alta plusvalía',
-    local:        'impulsar tu negocio en una ubicación estratégica',
-    oficina:      'llevar tu productividad al siguiente nivel',
+    : precioNum > 0
+      ? `$${precioNum.toLocaleString('es-MX')} MXN`
+      : 'precio competitivo'
+  const zona = ubicacion.trim() || 'una excelente ubicación'
+
+  let desc = `Espectacular ${tipoLabel[tipo]} en venta/renta ubicada en ${zona}, con un valor de ${precioFmt}.`
+
+  const detallesList: string[] = []
+
+  if (m2) detallesList.push(`cuenta con una superficie de ${m2} m²`)
+  if (pisos) detallesList.push(`se distribuye en ${pisos} ${Number(pisos) === 1 ? 'planta' : 'plantas'}`)
+  
+  if (recamaras) {
+    const closetText = tieneCloset ? ' con amplios clósets' : ''
+    detallesList.push(`ofrece ${recamaras} ${Number(recamaras) === 1 ? 'recámara' : 'recámaras'}${closetText}`)
   }
-  return `Espectacular ${tipoLabel[tipo]} ubicada en la exclusiva zona de ${zona}, disponible a un valor de ${precioFmt}. Esta propiedad destaca por sus acabados de primer nivel, diseño contemporáneo y una localización privilegiada que combina tranquilidad residencial con acceso inmediato a comercios, escuelas y vías principales. Ideal para quienes buscan ${usp[tipo]}. Una oportunidad única en el mercado — ¡agenda tu visita hoy!`
+
+  const banosFmt = []
+  if (banosCompletos && Number(banosCompletos) > 0) {
+    banosFmt.push(`${banosCompletos} ${Number(banosCompletos) === 1 ? 'baño completo' : 'baños completos'}`)
+  }
+  if (mediosBanos && Number(mediosBanos) > 0) {
+    banosFmt.push(`${mediosBanos} ${Number(mediosBanos) === 1 ? 'medio baño' : 'medios baños'}`)
+  }
+  if (banosFmt.length > 0) {
+    detallesList.push(`dispone de ${banosFmt.join(' y ')}`)
+  }
+
+  if (cocheras) {
+    detallesList.push(`cochera con espacio para ${cocheras} ${Number(cocheras) === 1 ? 'auto' : 'autos'}`)
+  }
+
+  if (detallesList.length > 0) {
+    desc += ` La propiedad ${detallesList.join(', ')}.`
+  }
+
+  const areasFmt = []
+  if (cocinaIntegral) areasFmt.push('cocina integral totalmente equipada')
+  if (cuartoTv) areasFmt.push('cuarto de TV')
+  if (cuartoLavado) areasFmt.push('área de lavado independiente')
+  if (jardin) areasFmt.push('jardín privado')
+  if (terraza) areasFmt.push('terraza ideal para reuniones')
+
+  if (areasFmt.length > 0) {
+    const last = areasFmt.pop()
+    const areasStr = areasFmt.length > 0 ? `${areasFmt.join(', ')} y ${last}` : last
+    desc += ` El inmueble está diseñado para tu comodidad, incluyendo ${areasStr}.`
+  }
+
+  if (esPrivada) {
+    desc += ` Se ubica dentro de una privada residencial con acceso controlado y seguridad las 24 horas, ideal para la tranquilidad de tu familia.`
+  } else if (calle.trim()) {
+    desc += ` Se encuentra sobre la calle ${calle.trim()}, una vialidad con excelente conectividad.`
+  }
+
+  if (amenidades.trim()) {
+    desc += ` Además, el complejo ofrece amenidades exclusivas como ${amenidades.trim()}.`
+  }
+
+  desc += ` Es una excelente oportunidad para habitar o invertir. ¡Contáctanos hoy mismo para agendar tu visita!`
+
+  return desc
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -165,7 +260,6 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
   const [ubicacion,       setUbicacion]       = useState(prop.ubicacion)
   const [ciudad,          setCiudad]          = useState(prop.ciudad)
   const [recamaras,       setRecamaras]       = useState(prop.recamaras != null ? String(prop.recamaras) : '')
-  const [banos,           setBanos]           = useState(prop.banos     != null ? String(prop.banos)     : '')
   const [m2,              setM2]              = useState(prop.m2        != null ? String(prop.m2)        : '')
   const [descripcion,     setDescripcion]     = useState(prop.descripcion ?? '')
   const [activa,          setActiva]          = useState(prop.activa)
@@ -176,9 +270,52 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
   const [saving,          setSaving]          = useState(false)
   const [error,           setError]           = useState<string | null>(null)
 
+  // Initialize new details from caracteristicas_lifestyle with fallbacks for existing records
+  const details = (prop.caracteristicas_lifestyle as Record<string, any>) ?? {}
+  const fallbackBanosCompletos = prop.banos != null ? String(Math.floor(prop.banos)) : ''
+  const fallbackMediosBanos = prop.banos != null && prop.banos % 1 >= 0.5 ? '1' : ''
+  const fallbackCocheras = prop.estacionamientos != null ? String(prop.estacionamientos) : ''
+
+  const [pisos,            setPisos]            = useState(details.detalles_pisos != null ? String(details.detalles_pisos) : '')
+  const [tieneCloset,      setTieneCloset]      = useState(!!details.detalles_closet)
+  const [cuartoTv,         setCuartoTv]         = useState(!!details.detalles_cuarto_tv)
+  const [banosCompletos,   setBanosCompletos]   = useState(details.detalles_banos_completos != null ? String(details.detalles_banos_completos) : fallbackBanosCompletos)
+  const [mediosBanos,      setMediosBanos]      = useState(details.detalles_medios_banos != null ? String(details.detalles_medios_banos) : fallbackMediosBanos)
+  const [cocinaIntegral,   setCocinaIntegral]   = useState(!!details.detalles_cocina_integral)
+  const [cuartoLavado,     setCuartoLavado]     = useState(!!details.detalles_cuarto_lavado)
+  const [jardin,           setJardin]           = useState(!!details.detalles_jardin)
+  const [terraza,          setTerraza]          = useState(!!details.detalles_terraza)
+  const [cocheras,         setCocheras]         = useState(details.detalles_cocheras != null ? String(details.detalles_cocheras) : fallbackCocheras)
+  const [esPrivada,        setEsPrivada]        = useState(!!details.detalles_privada)
+  const [calle,            setCalle]            = useState(details.detalles_calle != null ? String(details.detalles_calle) : '')
+  const [amenidades,       setAmenidades]       = useState(details.detalles_amenidades != null ? String(details.detalles_amenidades) : '')
+
   function handleGenerateDescription() {
-    setDescripcion(buildDescription(tipo, ubicacion, precio))
+    setDescripcion(
+      buildDescription(
+        tipo,
+        ubicacion,
+        precio,
+        recamaras,
+        m2,
+        pisos,
+        tieneCloset,
+        cuartoTv,
+        banosCompletos,
+        mediosBanos,
+        cocinaIntegral,
+        cuartoLavado,
+        jardin,
+        terraza,
+        cocheras,
+        esPrivada,
+        calle,
+        amenidades
+      )
+    )
   }
+
+
 
   async function handleCalcularMetricas() {
     if (!ubicacion.trim()) {
@@ -202,9 +339,13 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
     for (const file of localFiles) {
       const ext  = file.name.split('.').pop() ?? 'jpg'
       const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      
+      // Optimize image before upload
+      const optimizedFile = await optimizeImage(file)
+      
       const { data, error: upErr } = await supabase.storage
         .from('propiedades')
-        .upload(path, file, { upsert: false })
+        .upload(path, optimizedFile, { upsert: false })
       if (upErr) { console.error('[storage upload]', upErr.message); continue }
       if (data) {
         const { data: urlData } = supabase.storage.from('propiedades').getPublicUrl(data.path)
@@ -229,6 +370,19 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
       .filter((s) => s.startsWith('http'))
     const allImages = [...urlListFromTextarea, ...uploadedUrls]
 
+    // Identify and delete orphan images from Supabase Storage
+    if (prop.imagenes && prop.imagenes.length > 0) {
+      const removedUrls = prop.imagenes.filter((url) => !allImages.includes(url))
+      const removedPaths = removedUrls
+        .map((url) => extractPathFromUrl(url))
+        .filter((p): p is string => p !== null)
+      if (removedPaths.length > 0) {
+        await deleteStorageFiles(removedPaths)
+      }
+    }
+
+    const computedBanos = (banosCompletos ? Number(banosCompletos) : 0) + (mediosBanos ? Number(mediosBanos) * 0.5 : 0)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: err } = await (supabase as any)
       .from('propiedades')
@@ -239,12 +393,28 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
         ubicacion:      ubicacion.trim(),
         ciudad:         ciudad.trim().toLowerCase(),
         recamaras:      recamaras ? Number(recamaras) : null,
-        banos:          banos     ? Number(banos)     : null,
+        banos:          computedBanos || null,
+        estacionamientos: cocheras ? Number(cocheras) : null,
         m2:             m2        ? Number(m2)        : null,
         descripcion:    descripcion.trim() || null,
         imagenes:       allImages,
         activa,
         caracteristicas,
+        caracteristicas_lifestyle: {
+          detalles_pisos: pisos ? Number(pisos) : null,
+          detalles_closet: tieneCloset,
+          detalles_cuarto_tv: cuartoTv,
+          detalles_banos_completos: banosCompletos ? Number(banosCompletos) : null,
+          detalles_medios_banos: mediosBanos ? Number(mediosBanos) : null,
+          detalles_cocina_integral: cocinaIntegral,
+          detalles_cuarto_lavado: cuartoLavado,
+          detalles_jardin: jardin,
+          detalles_terraza: terraza,
+          detalles_cocheras: cocheras ? Number(cocheras) : null,
+          detalles_privada: esPrivada,
+          detalles_calle: calle.trim() || null,
+          detalles_amenidades: amenidades.trim() || null,
+        }
       })
       .eq('id', prop.id)
 
@@ -317,10 +487,37 @@ export default function EditPropertyModal({ prop, onDismiss, onSaved }: Props) {
           <Field label="Ubicación *"    value={ubicacion} onChange={setUbicacion} placeholder="Ej. Juriquilla, Querétaro" />
           <Field label="Ciudad *"       value={ciudad}    onChange={setCiudad}    placeholder="Ej. queretaro" />
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Recámaras" value={recamaras} onChange={setRecamaras} placeholder="3"   inputMode="numeric" />
-            <Field label="Baños"     value={banos}     onChange={setBanos}     placeholder="2"   inputMode="numeric" />
             <Field label="m²"        value={m2}        onChange={setM2}        placeholder="180" inputMode="numeric" />
+          </div>
+
+          {/* ── Detalles rápidos (para IA) ──────────────── */}
+          <SectionLabel>Detalles rápidos (para IA ✨)</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Pisos / Plantas" value={pisos} onChange={setPisos} placeholder="Ej. 2" inputMode="numeric" />
+            <Field label="Cocheras / Estacionamiento" value={cocheras} onChange={setCocheras} placeholder="Ej. 2" inputMode="numeric" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Baños completos" value={banosCompletos} onChange={setBanosCompletos} placeholder="Ej. 2" inputMode="numeric" />
+            <Field label="Medios baños" value={mediosBanos} onChange={setMediosBanos} placeholder="Ej. 1" inputMode="numeric" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Field label="Calle" value={calle} onChange={setCalle} placeholder="Ej. Paseo de la República" />
+            <Field label="Amenidades" value={amenidades} onChange={setAmenidades} placeholder="Ej. alberca, gym, áreas verdes" />
+          </div>
+
+          <label className="text-[11px] font-bold uppercase tracking-wider mt-1 block" style={{ color: '#9B9B9B' }}>
+            Características rápidas (Toca para activar)
+          </label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <ToggleButton active={tieneCloset} onClick={() => setTieneCloset(!tieneCloset)} label="👕 Con clóset" />
+            <ToggleButton active={cuartoTv} onClick={() => setCuartoTv(!cuartoTv)} label="📺 Cuarto de TV" />
+            <ToggleButton active={cocinaIntegral} onClick={() => setCocinaIntegral(!cocinaIntegral)} label="🍳 Cocina integral" />
+            <ToggleButton active={cuartoLavado} onClick={() => setCuartoLavado(!cuartoLavado)} label="🧺 Cuarto de lavado" />
+            <ToggleButton active={jardin} onClick={() => setJardin(!jardin)} label="🌳 Jardín" />
+            <ToggleButton active={terraza} onClick={() => setTerraza(!terraza)} label="🌅 Terraza" />
+            <ToggleButton active={esPrivada} onClick={() => setEsPrivada(!esPrivada)} label="🛡️ Privada" />
           </div>
 
           {/* ── Descripción con IA ───────────────────────────── */}

@@ -10,8 +10,8 @@ import type { PanInfo } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
 import Toast from '../components/ui/Toast'
 import { useAuth } from '../context/AuthContext'
-import { getProperties, mapPropiedadToMock, recordSwipe } from '../services/propertyService'
-import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
+import { getProperties, enriquecerPropiedad, recordSwipe } from '../services/propertyService'
+import { type PropiedadMock } from '../services/mockData'
 
 const SWIPE_THRESHOLD = 100
 const EXIT_X          = 650
@@ -198,7 +198,7 @@ const DraggableCard = forwardRef<DraggableCardHandle, DraggableCardProps>(
               📍 {card.ubicacion}
             </p>
             <div className="flex gap-3 mb-2.5 text-white text-[12px]">
-              {card.recamaras > 0 && <span>🛏 {card.recamaras} rec.</span>}
+              {(card.recamaras ?? 0) > 0 && <span>🛏 {card.recamaras} rec.</span>}
               <span>🚿 {card.banos} baños</span>
               <span>📐 {card.m2} m²</span>
             </div>
@@ -309,6 +309,7 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
 
   const [cards,            setCards]           = useState<PropiedadMock[]>([])
   const [loading,          setLoading]         = useState(true)
+  const [hasError,         setHasError]        = useState(false)
   const [fetchKey,         setFetchKey]        = useState(0)
   const [showAuthModal,    setShowAuthModal]   = useState(false)
   const [pendingAction,    setPendingAction]   = useState<'like' | null>(null)
@@ -319,9 +320,16 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
 
   useEffect(() => {
     setLoading(true)
+    setHasError(false)
     getProperties({ ciudad: ciudadInicial, tipos: filterToTipos(activeFilter) })
-      .then((data) => setCards(data.map(mapPropiedadToMock)))
-      .catch((err) => { console.error('Error detallado de Supabase en Discover:', err); setCards(MOCK_PROPERTIES) })
+      .then((data) => {
+        setCards(data.map(enriquecerPropiedad))
+      })
+      .catch((err) => {
+        console.error('Error detallado de Supabase en Discover:', err)
+        setCards([])
+        setHasError(true)
+      })
       .finally(() => setLoading(false))
   }, [activeFilter, ciudadInicial, fetchKey])
 
@@ -444,6 +452,23 @@ export default function DiscoverScreen({ onViewDetail, ciudadInicial, tipoInicia
               style={{ borderColor: '#E8D5C8', borderTopColor: '#C2714F' }}
             />
             <p className="text-[13px] font-medium" style={{ color: '#9B9B9B' }}>Cargando propiedades…</p>
+          </div>
+        ) : hasError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8">
+            <span className="text-[72px]">⚠️</span>
+            <p className="font-display text-[22px] font-bold" style={{ color: '#1A1A1A' }}>
+              Error de conexión
+            </p>
+            <p className="text-[14px] leading-[1.6]" style={{ color: '#6B6B6B' }}>
+              No se pudieron cargar las propiedades. Revisa tu conexión.
+            </p>
+            <button
+              onClick={() => setFetchKey((k) => k + 1)}
+              className="mt-2 px-7 py-3.5 rounded-full text-[14px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
+              style={{ background: '#C2714F' }}
+            >
+              Reintentar
+            </button>
           </div>
         ) : cards.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8">

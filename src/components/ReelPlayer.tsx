@@ -26,7 +26,7 @@ function fmtPrice(n: number): string {
   return `$${(n / 1_000).toFixed(0)}k`
 }
 
-const hasVideo = (p: PropiedadMock) => Boolean(p.urlVideo)
+const hasVideo = (p: PropiedadMock) => Boolean(p.url_video)
 
 // Safe numeric helpers — guard against NaN from mock/DB data
 const safeNum = (n: number, fallback: number) => (Number.isFinite(n) ? n : fallback)
@@ -43,18 +43,18 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
   const [asesor,      setAsesor]                = useState<AsesorInfo | null>(null)
   const [showSched,   setShowSched]             = useState(false)
 
-  const videoUrl = property.urlVideo || ''
+  const videoUrl = property.url_video || ''
 
   // Fetch asesor for contact/schedule buttons
   useEffect(() => {
-    if (!property.asesorId) return
+    if (!property.asesor_id) return
     supabase
       .from('perfiles')
       .select('nombre, telefono, avatar_url')
-      .eq('id', property.asesorId)
+      .eq('id', property.asesor_id)
       .single()
       .then(({ data }) => { if (data) setAsesor(data as AsesorInfo) })
-  }, [property.asesorId])
+  }, [property.asesor_id])
 
   const showIcon = useCallback((type: 'play' | 'pause') => {
     setOverlayIcon(type)
@@ -251,8 +251,8 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
         </p>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {property.recamaras > 0 && <Chip>🛏 {property.recamaras} rec.</Chip>}
-          {safeNum(property.m2, 0) > 0 && <Chip>📐 {property.m2} m²</Chip>}
+          {(property.recamaras ?? 0) > 0 && <Chip>🛏 {property.recamaras} rec.</Chip>}
+          {(property.m2 ?? 0) > 0 && <Chip>📐 {property.m2} m²</Chip>}
           <Chip highlight>{fmtPrice(property.precio)}</Chip>
         </div>
 
@@ -285,10 +285,10 @@ export default function ReelPlayer({ property, isAuthenticated, onAuthRequired }
 
       {/* ScheduleModal */}
       <AnimatePresence>
-        {showSched && session?.user && property.asesorId && (
+        {showSched && session?.user && property.asesor_id && (
           <ScheduleModal
             property={property}
-            asesorId={property.asesorId}
+            asesorId={property.asesor_id}
             clientId={session.user.id}
             onDismiss={() => setShowSched(false)}
           />

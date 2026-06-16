@@ -3,8 +3,8 @@ import { AnimatePresence } from 'framer-motion'
 import AuthModal from '../components/ui/AuthModal'
 import ReelPlayer from '../components/ReelPlayer'
 import { useAuth } from '../context/AuthContext'
-import { getProperties, mapPropiedadToMock } from '../services/propertyService'
-import { MOCK_PROPERTIES, type PropiedadMock } from '../services/mockData'
+import { getProperties, enriquecerPropiedad } from '../services/propertyService'
+import { type PropiedadMock } from '../services/mockData'
 
 const CATEGORIES = ['Para ti', 'Casas', 'Deptos', 'Comercial', 'Inversión', 'Lujo'] as const
 
@@ -16,6 +16,8 @@ export default function ReelsScreen() {
   const [allProperties,  setAllProperties]             = useState<PropiedadMock[]>([])
   const [properties,     setProperties]                = useState<PropiedadMock[]>([])
   const [loading,        setLoading]                   = useState(true)
+  const [hasError,       setHasError]                  = useState(false)
+  const [retryKey,       setRetryKey]                  = useState(0)
 
   function reelFilterMatches(p: PropiedadMock, cat: string): boolean {
     switch (cat) {
@@ -29,11 +31,17 @@ export default function ReelsScreen() {
   }
 
   useEffect(() => {
+    setLoading(true)
+    setHasError(false)
     getProperties()
-      .then((data) => setAllProperties(data.map(mapPropiedadToMock)))
-      .catch((err) => { console.error('Error detallado de Supabase en Reels:', err); setAllProperties(MOCK_PROPERTIES) })
+      .then((data) => setAllProperties(data.map(enriquecerPropiedad)))
+      .catch((err) => {
+        console.error('Error detallado de Supabase en Reels:', err)
+        setAllProperties([])
+        setHasError(true)
+      })
       .finally(() => setLoading(false))
-  }, [])
+  }, [retryKey])
 
   useEffect(() => {
     setProperties(
@@ -96,6 +104,22 @@ export default function ReelsScreen() {
             className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin"
             style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: 'white' }}
           />
+        </div>
+      ) : hasError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8 z-20">
+          <span className="text-[64px]">⚠️</span>
+          <p className="font-display text-white text-[20px] font-bold">
+            Error de conexión
+          </p>
+          <p className="text-[13px] leading-[1.6]" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            No se pudieron cargar los reels de propiedades.
+          </p>
+          <button
+            onClick={() => setRetryKey((k) => k + 1)}
+            className="mt-2 px-6 py-3 rounded-full text-[13px] font-semibold border-none cursor-pointer bg-white text-[#1A1A1A] transition-all active:scale-[.95]"
+          >
+            Reintentar
+          </button>
         </div>
       ) : (
         <div

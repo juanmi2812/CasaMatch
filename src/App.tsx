@@ -56,15 +56,28 @@ function AppContent() {
   async function navigateByRole() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return
-    const { data: profile } = await supabase
+
+    const { data: profile, error } = await supabase
       .from('perfiles')
       .select('rol')
       .eq('id', session.user.id)
       .maybeSingle()
+
+    if (error) {
+      console.error('[Router Error] Fallo al obtener perfil:', error)
+      setScreen('profile')
+      return
+    }
+
     const rol = (profile as { rol?: string } | null)?.rol ?? 'usuario'
-    if (rol === 'admin')   setScreen('admin')
-    else if (rol === 'asesor') setScreen('advisor')
-    else setScreen('profile')
+
+    if (rol === 'admin' || rol === 'admin_agencia') {
+      setScreen('admin')
+    } else if (rol === 'asesor') {
+      setScreen('advisor')
+    } else {
+      setScreen('profile')
+    }
   }
 
   function handleNavigate(target: Screen) {

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient'
 import type { Propiedad, CitaConDetalles } from '../types/database'
-import { mapPropiedadToMock } from './propertyService'
+import { enriquecerPropiedad } from './propertyService'
 import type { PropiedadMock } from './mockData'
 
 // ─── Matches ─────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ export async function getMatches(): Promise<MatchItem[]> {
     if (!prop) return []
     return [{
       swipeId:  row.id as string,
-      property: mapPropiedadToMock(prop as Propiedad),
+      property: enriquecerPropiedad(prop as Propiedad),
       savedAt:  row.creado_en as string,
     }]
   })

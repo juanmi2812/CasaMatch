@@ -67,19 +67,23 @@ export default function AdvisorDashboard() {
 
   const [filtroActivo,     setFiltroActivo]    = useState<'todos' | 'propiedades' | 'leads' | 'likes' | 'guardados'>('todos')
   const [perfil,           setPerfil]          = useState<Perfil | null>(null)
+  const [agenciaPlan,      setAgenciaPlan]     = useState<'free' | 'premium'>('free')
   const [kpis,             setKpis]            = useState<KpisAsesor | null>(null)
   const [leads,            setLeads]           = useState<LeadRow[]>([])
   const [myProps,          setMyProps]         = useState<PropRow[]>([])
+  const [citas,            setCitas]           = useState<any[]>([])
   const [kpisLoading,      setKpisLoading]     = useState(true)
   const [leadsLoading,     setLeadsLoading]    = useState(true)
+  const [citasLoading,     setCitasLoading]    = useState(true)
   const [propsLoading,     setPropsLoading]    = useState(true)
   const [kpisKey,          setKpisKey]         = useState(0)
+  const [crmTab,           setCrmTab]          = useState<'leads' | 'citas'>('leads')
   const [showAIModal,      setShowAIModal]     = useState(false)
   const [showNewPropModal, setShowNewPropModal] = useState(false)
   const [editingProp,      setEditingProp]     = useState<PropRow | null>(null)
   const [showSettings,     setShowSettings]    = useState(false)
 
-  // Fetch profile
+  // Fetch profile and agency plan
   useEffect(() => {
     if (!session?.user) return
     supabase
@@ -87,8 +91,25 @@ export default function AdvisorDashboard() {
       .select('*')
       .eq('id', session.user.id)
       .single()
-      .then(({ data }) => { if (data) setPerfil(data as Perfil) })
-  }, [session])
+      .then(async ({ data }) => {
+        if (data) {
+          const p = data as Perfil
+          setPerfil(p)
+          if (p.agencia_id) {
+            const { data: agData } = await (supabase as any)
+              .from('agencias')
+              .select('plan')
+              .eq('id', p.agencia_id)
+              .single()
+            if (agData) {
+              setAgenciaPlan((agData.plan as 'free' | 'premium') || 'free')
+            }
+          } else {
+            setAgenciaPlan('free')
+          }
+        }
+      })
+  }, [session, kpisKey])
 
   // Fetch KPIs
   useEffect(() => {
@@ -109,14 +130,13 @@ export default function AdvisorDashboard() {
   useEffect(() => {
     if (!session?.user) { setLeadsLoading(false); return }
     setLeadsLoading(true)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(supabase as any)
+    supabase
       .from('interacciones_swipes')
       .select('id, tipo_interaccion, creado_en, estatus, usuario:perfiles!usuario_id(nombre,avatar_url,telefono), propiedad:propiedades!propiedad_id(titulo,ciudad,tipo)')
       .in('tipo_interaccion', ['like', 'save'])
       .order('creado_en', { ascending: false })
       .limit(8)
-      .then(({ data }: { data: LeadRow[] | null }) => {
+      .then(({ data }: { data: any }) => {
         setLeads(data ?? [])
         setLeadsLoading(false)
       })
@@ -138,6 +158,27 @@ export default function AdvisorDashboard() {
       })
   }, [session, kpisKey])
 
+  // Fetch advisor's appointments (citas)
+  useEffect(() => {
+    if (!session?.user) { setCitasLoading(false); return }
+    setCitasLoading(true)
+    supabase
+      .from('citas')
+      .select(`
+        id,
+        fecha_cita,
+        estado,
+        cliente:perfiles!cliente_id(nombre, avatar_url, telefono),
+        propiedad:propiedades!propiedad_id(titulo, ciudad, tipo)
+      `)
+      .eq('asesor_id', session.user.id)
+      .order('fecha_cita', { ascending: true })
+      .then(({ data }) => {
+        setCitas(data ?? [])
+        setCitasLoading(false)
+      })
+  }, [session, kpisKey])
+
   const hotProperty = useMemo(() => {
     if (leads.length === 0) return null
     const counts: Record<string, number> = {}
@@ -152,13 +193,109 @@ export default function AdvisorDashboard() {
     return topCount >= 2 ? { titulo: topTitulo, conteo: topCount } : null
   }, [leads])
 
+  const activePropsCount = useMemo(() => {
+    return myProps.filter((p) => p.activa).length
+  }, [myProps])
+
+  function handleAddPropertyClick() {
+    if (agenciaPlan === 'free' && activePropsCount >= 5) {
+      alert('⚠️ Límite de plan gratuito alcanzado\n\nHas llegado al límite de 5 propiedades activas en tu plan gratuito. Desactiva o vende una de tus propiedades existentes para poder publicar una nueva, o actualiza tu suscripción.')
+    } else {
+      setShowNewPropModal(true)
+    }
+  }
+
+  async function handleUpgradePlan() {
+    if (!perfil) return
+
+    if (agenciaPlan === 'premium') {
+      const confirmDowngrade = window.confirm(
+        '👑 Estás en Plan Premium (Sin límites).\n\n¿Quieres bajar tu plan a "Gratuito" para reactivar el límite de 5 propiedades activas y probar el bloqueo?'
+      )
+      if (!confirmDowngrade) return
+
+      try {
+        if (perfil.agencia_id) {
+          const { error } = await (supabase as any)
+            .from('agencias')
+            .update({ plan: 'free' })
+            .eq('id', perfil.agencia_id)
+          if (error) throw error
+          setAgenciaPlan('free')
+          setKpisKey((k) => k + 1)
+          alert('⬇️ Cambiado a Plan Gratuito. El límite de 5 propiedades activas vuelve a aplicar.')
+        }
+      } catch (err: any) {
+        alert('Error al bajar de plan: ' + err.message)
+      }
+      return
+    }
+
+    const confirmUpgrade = window.confirm(
+      '⚡ Simulación de Suscripción Premium\n\n¿Quieres simular el pago y activar el Plan Premium sin límites para esta cuenta?'
+    )
+    if (!confirmUpgrade) return
+
+    try {
+      if (perfil.agencia_id) {
+        // Upgrade existing agency
+        const { error } = await (supabase as any)
+          .from('agencias')
+          .update({ plan: 'premium' })
+          .eq('id', perfil.agencia_id)
+        if (error) throw error
+        setAgenciaPlan('premium')
+        setKpisKey((k) => k + 1)
+        alert('👑 ¡Plan Premium activado con éxito! Límite de propiedades liberado.')
+      } else {
+        // Create new agency and link it
+        const agencyName = perfil.agencia || `Agencia de ${perfil.nombre}`
+        const { data: newAg, error: agErr } = await (supabase as any)
+          .from('agencias')
+          .insert({ nombre: agencyName, plan: 'premium' })
+          .select()
+          .single()
+        
+        if (agErr) throw agErr
+        
+        const { error: perfErr } = await (supabase as any)
+          .from('perfiles')
+          .update({ agencia_id: newAg.id })
+          .eq('id', perfil.id)
+          
+        if (perfErr) throw perfErr
+        
+        setPerfil({ ...perfil, agencia_id: newAg.id })
+        setAgenciaPlan('premium')
+        setKpisKey((k) => k + 1)
+        alert('👑 ¡Agencia creada y Plan Premium activado! Límite de propiedades liberado.')
+      }
+    } catch (err: any) {
+      alert('Error al subir de plan: ' + err.message)
+    }
+  }
+
   async function handleStatusChange(leadId: string, newStatus: string) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('interacciones_swipes')
       .update({ estatus: newStatus })
       .eq('id', leadId)
     setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, estatus: newStatus } : l))
+  }
+
+  async function handleCitaEstadoChange(citaId: string, nuevoEstado: 'confirmada' | 'cancelada') {
+    const { error } = await (supabase as any)
+      .from('citas')
+      .update({ estado: nuevoEstado })
+      .eq('id', citaId)
+    
+    if (error) {
+      alert('Error al actualizar la cita: ' + error.message)
+      return
+    }
+    setCitas((prev) =>
+      prev.map((c) => (c.id === citaId ? { ...c, estado: nuevoEstado } : c))
+    )
   }
 
   const metrics: { label: string; value: string; delta: string; icon: string; filtro: typeof filtroActivo }[] = [
@@ -183,14 +320,28 @@ export default function AdvisorDashboard() {
             <h1 className="font-display text-2xl sm:text-3xl font-bold break-words" style={{ color: '#1A1A1A' }}>
               {displayName}
             </h1>
-            {perfil?.agencia && (
-              <div
-                className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+              {perfil?.agencia && (
+                <div
+                  className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+                >
+                  {perfil.agencia}
+                </div>
+              )}
+              <button
+                onClick={handleUpgradePlan}
+                className="px-2 py-[3px] rounded-full text-[10px] font-bold text-white flex-shrink-0 border-none cursor-pointer hover:opacity-95 transition-opacity"
+                style={{
+                  background: agenciaPlan === 'premium'
+                    ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                    : 'linear-gradient(135deg, #9CA3AF 0%, #4B5563 100%)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                }}
               >
-                {perfil.agencia}
-              </div>
-            )}
+                {agenciaPlan === 'premium' ? 'Plan Premium 👑' : 'Plan Gratis ⚡ Subir'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -297,142 +448,294 @@ export default function AdvisorDashboard() {
         </div>
       )}
 
-      {/* ── Leads recientes ────────────────────────────────────── */}
-      {(filtroActivo === 'todos' || filtroActivo === 'leads') && <div className="px-4 mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-[17px] font-bold" style={{ color: '#1A1A1A' }}>
-            Leads recientes
-          </h2>
-        </div>
-
-        {leadsLoading && (
-          <div className="flex justify-center py-8">
-            <span className="text-[28px] animate-pulse">📩</span>
-          </div>
-        )}
-
-        {!leadsLoading && leads.length === 0 && (
-          <div
-            className="rounded-[20px] p-6 flex flex-col items-center text-center gap-3"
-            style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
-          >
-            <span className="text-[48px]">🏡</span>
-            <p className="font-display text-[16px] font-bold" style={{ color: '#1A1A1A' }}>
-              Aún no tienes leads
-            </p>
-            <p className="text-[13px] leading-[1.6]" style={{ color: '#9B9B9B' }}>
-              ¡Sube tu primera propiedad para empezar a recibir prospectos!
-            </p>
+      {/* ── CRM de Bolsillo (Leads & Citas) ────────────────────── */}
+      {(filtroActivo === 'todos' || filtroActivo === 'leads') && (
+        <div className="px-4 mb-5">
+          {/* Tab Switcher */}
+          <div className="flex border-b border-[#EDE4D7] mb-4 gap-2">
             <button
-              onClick={() => setShowNewPropModal(true)}
-              className="mt-1 px-6 py-[11px] rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
-              style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+              onClick={() => setCrmTab('leads')}
+              className="flex-1 pb-2 text-[14px] sm:text-[15px] font-bold border-b-2 transition-all cursor-pointer bg-transparent"
+              style={{
+                borderColor: crmTab === 'leads' ? '#C2714F' : 'transparent',
+                color:       crmTab === 'leads' ? '#C2714F' : '#9B9B9B',
+              }}
             >
-              + Agregar propiedad
+              📩 Leads Recientes
+            </button>
+            <button
+              onClick={() => setCrmTab('citas')}
+              className="flex-1 pb-2 text-[14px] sm:text-[15px] font-bold border-b-2 transition-all cursor-pointer bg-transparent"
+              style={{
+                borderColor: crmTab === 'citas' ? '#C2714F' : 'transparent',
+                color:       crmTab === 'citas' ? '#C2714F' : '#9B9B9B',
+              }}
+            >
+              📅 Citas y Visitas
             </button>
           </div>
-        )}
 
-        {!leadsLoading && leads.length > 0 && (
-          <div
-            className="rounded-[20px] overflow-hidden"
-            style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
-          >
-            {leads.map((lead, i) => {
-              const hot       = isHot(lead.creado_en)
-              const userName  = lead.usuario?.nombre ?? 'Usuario'
-              const propLabel = lead.propiedad
-                ? `${lead.propiedad.titulo ?? ''} · ${lead.propiedad.ciudad} · ${lead.propiedad.tipo}`
-                : '—'
-              const waMsg = encodeURIComponent(
-                `Hola ${userName}, soy ${displayName} de ${perfil?.agencia || 'CasaMatch'}. Vi que te interesó la propiedad: ${propLabel}. ¿En qué te puedo ayudar?`
-              )
-              const waLink = lead.usuario?.telefono
-                ? `https://wa.me/${lead.usuario.telefono.replace(/\D/g, '')}?text=${waMsg}`
-                : null
+          {/* ── LEADS TAB CONTENT ── */}
+          {crmTab === 'leads' && (
+            <>
+              {leadsLoading && (
+                <div className="flex justify-center py-8">
+                  <span className="text-[28px] animate-pulse">📩</span>
+                </div>
+              )}
 
-              return (
+              {!leadsLoading && leads.length === 0 && (
                 <div
-                  key={lead.id}
-                  className="flex items-start gap-3 px-4 py-3"
-                  style={{ borderBottom: i < leads.length - 1 ? '1px solid #F0EAE1' : 'none' }}
+                  className="rounded-[20px] p-6 flex flex-col items-center text-center gap-3"
+                  style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
                 >
-                  {/* Avatar */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden mt-0.5"
+                  <span className="text-[48px]">🏡</span>
+                  <p className="font-display text-[16px] font-bold" style={{ color: '#1A1A1A' }}>
+                    Aún no tienes leads
+                  </p>
+                  <p className="text-[13px] leading-[1.6]" style={{ color: '#9B9B9B' }}>
+                    ¡Sube tu primera propiedad para empezar a recibir prospectos!
+                  </p>
+                  <button
+                    onClick={handleAddPropertyClick}
+                    className="mt-1 px-6 py-[11px] rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all active:scale-[.97]"
                     style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
                   >
-                    {lead.usuario?.avatar_url ? (
-                      <img src={lead.usuario.avatar_url} alt={userName} className="w-full h-full object-cover" />
-                    ) : (
-                      initials(userName)
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
-                        {userName}
-                      </p>
-                      <span className="text-[11px]">{hot ? '🔥' : '🌡️'}</span>
-                      <span
-                        className="text-[10px] font-bold px-1.5 py-[1px] rounded-full flex-shrink-0"
-                        style={{
-                          background: hot ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)',
-                          color:      hot ? '#DC2626'              : '#92400E',
-                        }}
-                      >
-                        {hot ? 'Hot' : 'Warm'}
-                      </span>
-                    </div>
-                    <p className="text-[11px] truncate mb-1.5" style={{ color: '#9B9B9B' }}>
-                      {propLabel}
-                    </p>
-                    {/* Pipeline status selector */}
-                    <select
-                      value={lead.estatus || 'nuevo'}
-                      onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                      className="text-xs bg-gray-50 border border-gray-200 rounded-md outline-none px-1.5 py-[3px] cursor-pointer"
-                      style={{ color: '#4A4A4A' }}
-                    >
-                      <option value="nuevo">🔵 Nuevo</option>
-                      <option value="contactado">🟡 Contactado</option>
-                      <option value="cita">🟣 Cita agendada</option>
-                      <option value="cierre">🟢 Cierre exitoso</option>
-                      <option value="descartado">⚫ Descartado</option>
-                    </select>
-                  </div>
-
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-[10px]" style={{ color: '#C8C8C8' }}>
-                      {relativeTime(lead.creado_en)}
-                    </p>
-                    {waLink ? (
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
-                      >
-                        WhatsApp
-                      </a>
-                    ) : (
-                      <button
-                        onClick={() => alert(`No hay número de teléfono registrado para ${lead.usuario?.nombre ?? 'este usuario'}.`)}
-                        className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border-none cursor-pointer"
-                        style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
-                      >
-                        Sin tel.
-                      </button>
-                    )}
-                  </div>
+                    + Agregar propiedad
+                  </button>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>}
+              )}
+
+              {!leadsLoading && leads.length > 0 && (
+                <div
+                  className="rounded-[20px] overflow-hidden"
+                  style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+                >
+                  {leads.map((lead, i) => {
+                    const hot       = isHot(lead.creado_en)
+                    const userName  = lead.usuario?.nombre ?? 'Usuario'
+                    const propLabel = lead.propiedad
+                      ? `${lead.propiedad.titulo ?? ''} · ${lead.propiedad.ciudad} · ${lead.propiedad.tipo}`
+                      : '—'
+                    const waMsg = encodeURIComponent(
+                      `Hola ${userName}, soy ${displayName} de ${perfil?.agencia || 'CasaMatch'}. Vi que te interesó la propiedad: ${propLabel}. ¿En qué te puedo ayudar?`
+                    )
+                    const waLink = lead.usuario?.telefono
+                      ? `https://wa.me/${lead.usuario.telefono.replace(/\D/g, '')}?text=${waMsg}`
+                      : null
+
+                    return (
+                      <div
+                        key={lead.id}
+                        className="flex items-start gap-3 px-4 py-3"
+                        style={{ borderBottom: i < leads.length - 1 ? '1px solid #F0EAE1' : 'none' }}
+                      >
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden mt-0.5"
+                          style={{ background: 'linear-gradient(135deg, #E8A98A 0%, #C2714F 100%)' }}
+                        >
+                          {lead.usuario?.avatar_url ? (
+                            <img src={lead.usuario.avatar_url} alt={userName} className="w-full h-full object-cover" />
+                          ) : (
+                            initials(userName)
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-[13px] font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                              {userName}
+                            </p>
+                            <span className="text-[11px]">{hot ? '🔥' : '🌡️'}</span>
+                            <span
+                              className="text-[10px] font-bold px-1.5 py-[1px] rounded-full flex-shrink-0"
+                              style={{
+                                background: hot ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)',
+                                color:      hot ? '#DC2626'              : '#92400E',
+                              }}
+                            >
+                              {hot ? 'Hot' : 'Warm'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] truncate mb-1.5" style={{ color: '#9B9B9B' }}>
+                            {propLabel}
+                          </p>
+                          <select
+                            value={lead.estatus || 'nuevo'}
+                            onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                            className="text-xs bg-gray-50 border border-gray-200 rounded-md outline-none px-1.5 py-[3px] cursor-pointer"
+                            style={{ color: '#4A4A4A' }}
+                          >
+                            <option value="nuevo">🔵 Nuevo</option>
+                            <option value="contactado">🟡 Contactado</option>
+                            <option value="cita">🟣 Cita agendada</option>
+                            <option value="cierre">🟢 Cierre exitoso</option>
+                            <option value="descartado">⚫ Descartado</option>
+                          </select>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px]" style={{ color: '#C8C8C8' }}>
+                            {relativeTime(lead.creado_en)}
+                          </p>
+                          {waLink ? (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                              style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
+                            >
+                              WhatsApp
+                            </a>
+                          ) : (
+                            <button
+                              onClick={() => alert(`No hay número de teléfono registrado para ${lead.usuario?.nombre ?? 'este usuario'}.`)}
+                              className="mt-1 inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full border-none cursor-pointer"
+                              style={{ background: 'rgba(194,113,79,0.10)', color: '#C2714F' }}
+                            >
+                              Sin tel.
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── CITAS TAB CONTENT ── */}
+          {crmTab === 'citas' && (
+            <>
+              {citasLoading && (
+                <div className="flex justify-center py-8">
+                  <span className="text-[28px] animate-pulse">📅</span>
+                </div>
+              )}
+
+              {!citasLoading && citas.length === 0 && (
+                <div
+                  className="rounded-[20px] p-6 flex flex-col items-center text-center gap-3"
+                  style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+                >
+                  <span className="text-[48px]">📆</span>
+                  <p className="font-display text-[16px] font-bold" style={{ color: '#1A1A1A' }}>
+                    No tienes citas solicitadas
+                  </p>
+                  <p className="text-[13px] leading-[1.6]" style={{ color: '#9B9B9B' }}>
+                    Los clientes que hagan match con tu inventario agendarán visitas desde la app.
+                  </p>
+                </div>
+              )}
+
+              {!citasLoading && citas.length > 0 && (
+                <div
+                  className="rounded-[20px] overflow-hidden"
+                  style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}
+                >
+                  {citas.map((cita, i) => {
+                    const clientName = cita.cliente?.nombre ?? 'Cliente'
+                    const propTitle  = cita.propiedad?.titulo ?? 'Propiedad'
+                    const fechaFmt   = new Date(cita.fecha_cita).toLocaleString('es-MX', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                    
+                    const waMsg = encodeURIComponent(
+                      `Hola ${clientName}, soy ${displayName} de ${perfil?.agencia || 'CasaMatch'}. Con respecto a la cita agendada para la propiedad "${propTitle}" el día ${fechaFmt}...`
+                    )
+                    const waLink = cita.cliente?.telefono
+                      ? `https://wa.me/${cita.cliente.telefono.replace(/\D/g, '')}?text=${waMsg}`
+                      : null
+
+                    return (
+                      <div
+                        key={cita.id}
+                        className="flex flex-col gap-2.5 px-4 py-4"
+                        style={{ borderBottom: i < citas.length - 1 ? '1px solid #F0EAE1' : 'none' }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-white overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, #5C6E4A 0%, #2F3D24 100%)' }}
+                          >
+                            {cita.cliente?.avatar_url ? (
+                              <img src={cita.cliente.avatar_url} alt={clientName} className="w-full h-full object-cover" />
+                            ) : (
+                              initials(clientName)
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-semibold text-[#1A1A1A] truncate">{clientName}</p>
+                            <p className="text-[11px] text-[#9B9B9B] truncate">{propTitle}</p>
+                            <p className="text-[12px] font-bold text-[#C2714F] mt-0.5">📅 {fechaFmt}h</p>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            {cita.estado === 'pendiente' && (
+                              <span className="text-[9px] font-bold px-2 py-[2px] rounded bg-amber-100 text-amber-800">PENDIENTE</span>
+                            )}
+                            {cita.estado === 'confirmada' && (
+                              <span className="text-[9px] font-bold px-2 py-[2px] rounded bg-green-100 text-green-800">CONFIRMADA</span>
+                            )}
+                            {cita.estado === 'cancelada' && (
+                              <span className="text-[9px] font-bold px-2 py-[2px] rounded bg-red-100 text-red-800">CANCELADA</span>
+                            )}
+
+                            {waLink && (
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] font-semibold px-2.5 py-[3px] rounded-full mt-1"
+                                style={{ background: '#25D366', color: 'white', textDecoration: 'none' }}
+                              >
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {cita.estado === 'pendiente' && (
+                          <div className="flex gap-2 mt-1 pl-13">
+                            <button
+                              onClick={() => handleCitaEstadoChange(cita.id, 'confirmada')}
+                              className="flex-1 py-2 rounded-lg text-xs font-bold text-white border-none cursor-pointer bg-green-600 transition-all active:scale-[.95]"
+                            >
+                              ✓ Confirmar
+                            </button>
+                            <button
+                              onClick={() => handleCitaEstadoChange(cita.id, 'cancelada')}
+                              className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-700 border border-gray-300 cursor-pointer bg-white transition-all active:scale-[.95]"
+                            >
+                              ✕ Rechazar
+                            </button>
+                          </div>
+                        )}
+                        {cita.estado === 'confirmada' && (
+                          <div className="flex pl-13">
+                            <button
+                              onClick={() => handleCitaEstadoChange(cita.id, 'cancelada')}
+                              className="text-[11px] font-semibold text-red-600 hover:text-red-800 cursor-pointer bg-transparent border-none p-0"
+                            >
+                              Cancelar visita
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Mis propiedades ────────────────────────────────────── */}
       {(filtroActivo === 'todos' || filtroActivo === 'propiedades') && <div className="px-4 mb-5">
@@ -441,7 +744,7 @@ export default function AdvisorDashboard() {
             Mis propiedades
           </h2>
           <button
-            onClick={() => setShowNewPropModal(true)}
+            onClick={handleAddPropertyClick}
             className="text-[12px] font-semibold border-none cursor-pointer bg-transparent"
             style={{ color: '#C2714F' }}
           >
